@@ -1,4 +1,7 @@
 # AiDD MCP Server
+
+> **IMPORTANT:** This package has been renamed to `skydeckai-code` and is now maintained at https://pypi.org/project/skydeckai-code/. All new updates and improvements will be added to the new package. This `mcp-server-aidd` package is no longer maintained.
+
 [![smithery badge](https://smithery.ai/badge/mcp-server-aidd)](https://smithery.ai/server/mcp-server-aidd)
 
 An MCP server that provides a comprehensive set of tools for AI-driven development workflows. Features include file system operations, code analysis using tree-sitter for multiple programming languages, Git operations, code execution, and system information retrieval. Designed to enhance AI's capability to assist in software development tasks.
@@ -16,6 +19,7 @@ npx -y @smithery/cli install mcp-server-aidd --client claude
 ```
 
 ### Manual Installation
+
 ```bash
 # Using mcp-get
 npx @michaellatman/mcp-get@latest install mcp-server-aidd

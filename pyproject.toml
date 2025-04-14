@@ -1,6 +1,6 @@
 [project]
 name = "mcp-server-aidd"
-version = "0.1.22"
+version = "0.1.23"
 description = "This MCP server provides a set of tools that support AI-driven Development workflows."
 readme = "README.md"
 requires-python = ">=3.11"
