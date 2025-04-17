@@ -1,6 +1,7 @@
 # SkyDeckAI Code
 [![Verified on MseeP](https://mseep.ai/badge.svg)](https://mseep.ai/app=3683017a-5134-41f7-9b24-831c32c318bd)
 An MCP server that provides a comprehensive set of tools for AI-driven development workflows. Features include file system operations, code analysis using tree-sitter for multiple programming languages, Git operations, code execution, web content fetching with HTML-to-markdown conversion, multi-engine web search, code content searching, and system information retrieval. Designed to enhance AI's capability to assist in software development tasks by providing direct access to both local and remote resources.
+[![Verified on MseeP](https://mseep.ai/badge.svg)](https://mseep.ai/app=288eb97d-4a02-4042-a358-da98d25d4136)
 
 # Formerly Known As MCP-Server-AIDD
 
