@@ -876,7 +876,7 @@ npx @modelcontextprotocol/inspector run
 -   Path traversal prevention
 -   File permission preservation
 -   Safe operation handling
-
+[![Verified on MseeP](https://mseep.ai/badge.svg)](https://mseep.ai/app=3683017a-5134-41f7-9b24-831c32c318bd)
 ## Upcoming Features
 
 -   GitHub tools:
