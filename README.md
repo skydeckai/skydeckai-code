@@ -4,7 +4,7 @@ An MCP server that provides a comprehensive set of tools for AI-driven developme
 [![Verified on MseeP](https://mseep.ai/badge.svg)](https://mseep.ai/app=288eb97d-4a02-4042-a358-da98d25d4136)
 
 # Formerly Known As MCP-Server-AIDD
-
+[![Verified on MseeP](https://mseep.ai/badge.svg)](https://mseep.ai/app=11dfa7da-735c-4468-ad50-e703bfe538ad)
 This mcp server was formerly known as `mcp-server-aidd`. It was renamed to `skydeckai-code` to credit the team at [SkyDeck.ai](https://skydeck.ai) with creating this application along with [East Agile](https://eastagile.com). But more importantly we realized that the term AI Driven Development (AIDD) was just not catching on. People did not understand at a glance what it was about. And nor did LLMs. "Code" was far more intuitive. And linguistically intuitive is important in the world of agentic AI.
 
 <a href="https://glama.ai/mcp/servers/mpixtij6se"><img width="380" height="200" src="https://glama.ai/mcp/servers/mpixtij6se/badge" alt="AiDD Server MCP server" /></a>
