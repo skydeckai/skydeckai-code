@@ -71,9 +71,9 @@ async def handle_get_issue(args: Dict[str, Any]) -> List[TextContent]:
         # Make request
         conn.request("GET", path, headers=headers)
         response = conn.getresponse()
-
         if response.status == 404:
-            return [TextContent(type="text", text=f"Issue #{issue_number} not found in repository {owner}/{repo}")]
+            return [TextContent(type="text", text=f"Issue #{issue_number} not found in repository {owner}/{repo}. "
+                                "Please set GITHUB_TOKEN environment variable if you are searching for private repositories.")]
 
         if response.status != 200:
             return [TextContent(type="text", text=f"Error fetching issue: {response.status} {response.reason}")]
