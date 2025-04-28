@@ -15,10 +15,12 @@ async def test_handle_get_issue_real_api():
         "issue_number": 1
     })
 
-    assert isinstance(result, TextContent)
-    assert result.type == "text"
-    assert "python" in result.text.lower()
-    assert "cpython" in result.text.lower()
+    assert isinstance(result, list)
+    assert len(result) == 1
+    assert isinstance(result[0], TextContent)
+    assert result[0].type == "text"
+    assert "python" in result[0].text.lower()
+    assert "cpython" in result[0].text.lower()
 
 
 @pytest.mark.asyncio
@@ -30,9 +32,11 @@ async def test_handle_get_issue_not_found_real_api():
         "issue_number": 999999999  # Very high number that shouldn't exist
     })
 
-    assert isinstance(result, TextContent)
-    assert result.type == "text"
-    assert "not found" in result.text.lower()
+    assert isinstance(result, list)
+    assert len(result) == 1
+    assert isinstance(result[0], TextContent)
+    assert result[0].type == "text"
+    assert "not found" in result[0].text.lower()
 
 
 @pytest.mark.asyncio
@@ -44,6 +48,9 @@ async def test_handle_get_issue_private_repo():
         "issue_number": 1
     })
 
-    assert isinstance(result, TextContent)
-    assert result.type == "text"
-    assert "error" in result.text.lower() or "not found" in result.text.lower()
+    assert isinstance(result, list)
+    assert len(result) == 1
+    assert isinstance(result[0], TextContent)
+    assert result[0].type == "text"
+    assert "error" in result[0].text.lower(
+    ) or "not found" in result[0].text.lower()

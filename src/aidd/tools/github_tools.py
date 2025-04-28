@@ -1,7 +1,7 @@
 import http.client
 import json
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 from mcp.types import TextContent
 
 # Tool definition
@@ -34,13 +34,13 @@ def get_issue_tool() -> Dict[str, Any]:
 # Tool handler
 
 
-async def handle_get_issue(args: Dict[str, Any]) -> TextContent:
+async def handle_get_issue(args: Dict[str, Any]) -> List[TextContent]:
     owner = args.get("owner")
     repo = args.get("repo")
     issue_number = args.get("issue_number")
 
     if not all([owner, repo, issue_number]):
-        return TextContent(type="text", text="Error: Missing required parameters. Required parameters are owner, repo, and issue_number.")
+        return [TextContent(type="text", text="Error: Missing required parameters. Required parameters are owner, repo, and issue_number.")]
 
     # GitHub API URL
     path = f"/repos/{owner}/{repo}/issues/{issue_number}"
@@ -65,10 +65,10 @@ async def handle_get_issue(args: Dict[str, Any]) -> TextContent:
         response = conn.getresponse()
 
         if response.status == 404:
-            return TextContent(type="text", text=f"Issue #{issue_number} not found in repository {owner}/{repo}")
+            return [TextContent(type="text", text=f"Issue #{issue_number} not found in repository {owner}/{repo}")]
 
         if response.status != 200:
-            return TextContent(type="text", text=f"Error fetching issue: {response.status} {response.reason}")
+            return [TextContent(type="text", text=f"Error fetching issue: {response.status} {response.reason}")]
 
         # Read and parse response
         issue_data = json.loads(response.read())
@@ -97,10 +97,10 @@ async def handle_get_issue(args: Dict[str, Any]) -> TextContent:
         if body := issue_data.get('body'):
             issue_info += f"## Description\n\n{body}\n\n"
 
-        return TextContent(type="text", text=issue_info)
+        return [TextContent(type="text", text=issue_info)]
 
     except Exception as e:
-        return TextContent(type="text", text=f"Error fetching issue: {str(e)}")
+        return [TextContent(type="text", text=f"Error fetching issue: {str(e)}")]
     finally:
         if conn is not None:
             conn.close()

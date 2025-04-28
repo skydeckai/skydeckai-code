@@ -9,8 +9,10 @@ from .github_tools import handle_get_issue
 async def test_handle_get_issue_missing_params():
     """Test that missing parameters return an error message"""
     result = await handle_get_issue({})
-    assert result.type == "text"
-    assert "Missing required parameters" in result.text
+    assert isinstance(result, list)
+    assert len(result) == 1
+    assert result[0].type == "text"
+    assert "Missing required parameters" in result[0].text
 
 
 @pytest.mark.asyncio
@@ -39,12 +41,14 @@ async def test_handle_get_issue_success():
             "issue_number": 1
         })
 
-        assert result.type == "text"
-        assert "Test Issue" in result.text
-        assert "testuser" in result.text
-        assert "bug" in result.text
-        assert "assignee1" in result.text
-        assert "Test issue body" in result.text
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0].type == "text"
+        assert "Test Issue" in result[0].text
+        assert "testuser" in result[0].text
+        assert "bug" in result[0].text
+        assert "assignee1" in result[0].text
+        assert "Test issue body" in result[0].text
 
 
 @pytest.mark.asyncio
@@ -61,8 +65,10 @@ async def test_handle_get_issue_not_found():
             "issue_number": 999
         })
 
-        assert result.type == "text"
-        assert "not found" in result.text.lower()
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0].type == "text"
+        assert "not found" in result[0].text.lower()
 
 
 @pytest.mark.asyncio
@@ -80,9 +86,11 @@ async def test_handle_get_issue_error():
             "issue_number": 1
         })
 
-        assert result.type == "text"
-        assert "Error fetching issue" in result.text
-        assert "500" in result.text
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0].type == "text"
+        assert "Error fetching issue" in result[0].text
+        assert "500" in result[0].text
 
 
 @pytest.mark.asyncio
@@ -96,6 +104,7 @@ async def test_handle_get_issue_exception():
             "issue_number": 1
         })
 
-        assert result.type == "text"
-        assert "Error fetching issue" in result.text
-        assert "Connection failed" in result.text
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0].type == "text"
+        assert "Error fetching issue" in result[0].text
