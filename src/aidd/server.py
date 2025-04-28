@@ -9,6 +9,7 @@ from .tools import TOOL_DEFINITIONS, TOOL_HANDLERS
 
 server = Server("skydeckai-code")
 
+
 @server.list_tools()
 async def handle_list_tools() -> list[types.Tool]:
     """
@@ -16,6 +17,7 @@ async def handle_list_tools() -> list[types.Tool]:
     Each tool specifies its arguments using JSON Schema validation.
     """
     return [types.Tool(**tool) for tool in TOOL_DEFINITIONS]
+
 
 @server.call_tool()
 async def handle_call_tool(
@@ -32,6 +34,7 @@ async def handle_call_tool(
         raise ValueError(f"Unknown tool: {name}")
 
     return await handler(arguments)
+
 
 async def main():
     # Run the server using stdin/stdout streams

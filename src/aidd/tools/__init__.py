@@ -1,3 +1,4 @@
+from .github_tools import get_issue_tool, handle_get_issue
 from .code_analysis import handle_codebase_mapper, codebase_mapper_tool
 from .code_execution import (
     execute_code_tool,
@@ -82,6 +83,8 @@ TOOL_DEFINITIONS = [
     web_search_tool(),
     # System tools
     get_system_info_tool(),
+    # Github tools
+    get_issue_tool(),
 ]
 
 # Export all handlers
@@ -116,4 +119,6 @@ TOOL_HANDLERS = {
     # Web handlers
     "web_fetch": handle_web_fetch,
     "web_search": handle_web_search,
+    # Github handlers
+    "get_issue": handle_get_issue,
 }
