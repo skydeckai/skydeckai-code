@@ -10,7 +10,15 @@ from mcp.types import TextContent
 def get_issue_tool() -> Dict[str, Any]:
     return {
         "name": "get_issue",
-        "description": "Gets the contents of an issue within a repository",
+        "description": "Retrieves detailed information about a GitHub issue from a repository. "
+        "WHEN TO USE: When you need to examine issue details, track progress, understand requirements, "
+        "or gather context about a specific problem or feature request. Ideal for reviewing issue descriptions, "
+        "checking status, identifying assignees, or understanding the full context of a development task. "
+        "WHEN NOT TO USE: When you need to create new issues, update existing ones, or interact with pull requests. "
+        "For those operations, use the appropriate GitHub API endpoints or tools. "
+        "RETURNS: A formatted markdown response containing the issue's title, number, state, creator, creation date, "
+        "last update date, URL, labels, assignees, and full description. The response is structured for easy reading "
+        "and includes all relevant metadata to understand the issue's context and current status.",
         "inputSchema": {
             "type": "object",
             "properties": {
