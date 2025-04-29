@@ -2,8 +2,66 @@ import pytest
 from unittest.mock import patch, MagicMock
 from typing import Dict, Any
 import mcp.types as types
-from .github_tools import handle_get_issue
+from .github_tools import handle_get_issue, handle_create_pull_request_review
 
+
+@pytest.mark.asyncio
+async def test_handle_create_pull_request_review_missing_params():
+    """Return error if required args missing"""
+    result = await handle_create_pull_request_review({"repo": "repo", "pull_number": 1, "event": "COMMENT"})
+    assert isinstance(result, list)
+    assert "Missing required parameters" in result[0].text
+
+@pytest.mark.asyncio
+async def test_handle_create_pull_request_review_success():
+    mock_response = MagicMock()
+    mock_response.status = 201
+    mock_response.read.return_value = b'{"id": 123, "body": "Review posted!", "event": "COMMENT"}'
+
+    with patch('http.client.HTTPSConnection') as mock_conn:
+        mock_conn.return_value.getresponse.return_value = mock_response
+        result = await handle_create_pull_request_review({
+            "owner": "test",
+            "repo": "repo",
+            "pull_number": 1,
+            "event": "COMMENT",
+            "body": "Nice work!"
+        })
+        assert isinstance(result, list)
+        assert "Pull request review created" in result[0].text
+        assert "Review posted" in result[0].text
+
+@pytest.mark.asyncio
+async def test_handle_create_pull_request_review_api_error():
+    mock_response = MagicMock()
+    mock_response.status = 422
+    mock_response.reason = "Unprocessable Entity"
+    mock_response.read.return_value = b'{"message": "Validation Failed"}'
+    with patch('http.client.HTTPSConnection') as mock_conn:
+        mock_conn.return_value.getresponse.return_value = mock_response
+        result = await handle_create_pull_request_review({
+            "owner": "test",
+            "repo": "repo",
+            "pull_number": 1,
+            "event": "COMMENT",
+            "body": "invalid"
+        })
+        assert isinstance(result, list)
+        assert "Error creating pull request review" in result[0].text
+        assert "422" in result[0].text or "Unprocessable" in result[0].text
+
+@pytest.mark.asyncio
+async def test_handle_create_pull_request_review_exception():
+    with patch('http.client.HTTPSConnection') as mock_conn:
+        mock_conn.side_effect = Exception("oops")
+        result = await handle_create_pull_request_review({
+            "owner": "test",
+            "repo": "repo",
+            "pull_number": 1,
+            "event": "COMMENT",
+        })
+        assert isinstance(result, list)
+        assert "Exception occurred" in result[0].text
 
 @pytest.mark.asyncio
 async def test_handle_get_issue_missing_params():

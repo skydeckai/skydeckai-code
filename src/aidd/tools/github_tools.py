@@ -2,7 +2,7 @@ import http.client
 import json
 import os
 from typing import Any, Dict, List
-from mcp.types import TextContent
+from mcp.types import TextContent, ErrorData
 
 # Tool definition
 
@@ -41,6 +41,71 @@ def get_issue_tool() -> Dict[str, Any]:
 
 # Tool handler
 
+
+def create_pull_request_review_tool() -> Dict[str, Any]:
+    return {
+        "name": "create_pull_request_review",
+        "description": "Create a review for a pull request. Use this to approve, request changes, or comment on a PR. You can also submit code review comments.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "owner": {"type": "string", "description": "Repository owner"},
+                "repo": {"type": "string", "description": "Repository name"},
+                "pull_number": {"type": "number", "description": "Pull request number"},
+                "event": {"type": "string", "description": "Review action: APPROVE, REQUEST_CHANGES, or COMMENT"},
+                "body": {"type": "string", "description": "Text of the review (optional)", "nullable": True},
+                "comments": {"type": "array", "items": {"type": "object"}, "description": "Array of review comments (optional)", "nullable": True},
+                "commit_id": {"type": "string", "description": "SHA of commit to review (optional)", "nullable": True},
+            },
+            "required": ["owner", "repo", "pull_number", "event"]
+        },
+    }
+
+
+# Handler for creating a pull request review
+async def handle_create_pull_request_review(args: Dict[str, Any]) -> List[TextContent]:
+    owner = args.get("owner")
+    repo = args.get("repo")
+    pull_number = args.get("pull_number")
+    event = args.get("event")
+    body_value = args.get("body")
+    comments_value = args.get("comments")
+    commit_id = args.get("commit_id")
+
+    if not all([owner, repo, pull_number, event]):
+        return [TextContent(type="text", text="Error: Missing required parameters: owner, repo, pull_number, event.")]
+
+    path = f"/repos/{owner}/{repo}/pulls/{pull_number}/reviews"
+    conn = None
+    try:
+        conn = http.client.HTTPSConnection("api.github.com")
+        headers = {
+            "Accept": "application/vnd.github.v3+json",
+            "User-Agent": "Python-MCP-Server",
+        }
+        if token := os.environ.get("GITHUB_TOKEN"):
+            headers["Authorization"] = f"token {token}"
+
+        payload = {"event": event}
+        if body_value:
+            payload["body"] = body_value
+        if commit_id:
+            payload["commit_id"] = commit_id
+        if comments_value:
+            payload["comments"] = comments_value
+
+        conn.request("POST", path, body=json.dumps(payload), headers=headers)
+        response = conn.getresponse()
+        response_body = response.read()
+        if response.status not in (200, 201):
+            return [TextContent(type="text", text=f"Error creating pull request review: {response.status} {response.reason}\n{response_body.decode()}")]
+        review_data = json.loads(response_body)
+        return [TextContent(type="text", text=f"Pull request review created: {json.dumps(review_data, indent=2)}")]
+    except Exception as e:
+        return [TextContent(type="text", text=f"Exception occurred: {str(e)}")]
+    finally:
+        if conn:
+            conn.close()
 
 async def handle_get_issue(args: Dict[str, Any]) -> List[TextContent]:
     owner = args.get("owner")

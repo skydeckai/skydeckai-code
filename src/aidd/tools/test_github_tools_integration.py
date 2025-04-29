@@ -2,8 +2,25 @@ import pytest
 import os
 from typing import Dict, Any
 from mcp.types import TextContent
-from .github_tools import handle_get_issue
+from .github_tools import handle_get_issue, handle_create_pull_request_review
 
+
+@pytest.mark.asyncio
+@pytest.mark.skipif("GITHUB_TOKEN" not in os.environ or not os.environ.get('GITHUB_TEST_REPO_OWNER') or not os.environ.get('GITHUB_TEST_REPO'), reason="Needs GITHUB_TOKEN, GITHUB_TEST_REPO_OWNER, and GITHUB_TEST_REPO env variables.")
+async def test_handle_create_pull_request_review_real_api():
+    """Integration test for creating a review (safe COMMENT event)."""
+    owner = os.environ["GITHUB_TEST_REPO_OWNER"]
+    repo = os.environ["GITHUB_TEST_REPO"]
+    pr_num = int(os.environ.get("GITHUB_TEST_PR_NUMBER", "1"))  # Default to PR 1 if not set
+    result = await handle_create_pull_request_review({
+        "owner": owner,
+        "repo": repo,
+        "pull_number": pr_num,
+        "event": "COMMENT",
+        "body": "*Integration test comment*"
+    })
+    assert isinstance(result, list)
+    assert any("review" in r.text.lower() for r in result)
 
 @pytest.mark.asyncio
 async def test_handle_get_issue_real_api():
