@@ -177,3 +177,123 @@ async def handle_get_issue(args: Dict[str, Any]) -> List[TextContent]:
     finally:
         if conn is not None:
             conn.close()
+
+
+def get_pull_request_files_tool() -> Dict[str, Any]:
+    return {
+        "name": "get_pull_request_files",
+        "description": "Retrieves the list of files changed in a GitHub pull request. "
+        "WHEN TO USE: When you need to examine which files were modified, added, or deleted in a specific pull request. "
+        "This is useful for code review, understanding the scope of changes, or analyzing the impact of a pull request. "
+        "WHEN NOT TO USE: When you need to view the actual content changes within files, create or modify pull requests, "
+        "or when you're interested in other pull request metadata such as comments or reviews. "
+        "RETURNS: A formatted markdown response containing a list of all files changed in the pull request, including "
+        "the filename, status (added, modified, removed), and change statistics (additions and deletions).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "owner": {
+                    "type": "string",
+                    "description": "Repository owner"
+                },
+                "repo": {
+                    "type": "string",
+                    "description": "Repository name"
+                },
+                "pull_number": {
+                    "type": "number",
+                    "description": "Pull request number"
+                }
+            },
+            "required": ["owner", "repo", "pull_number"]
+        },
+    }
+
+
+async def handle_get_pull_request_files(args: Dict[str, Any]) -> List[TextContent]:
+    owner = args.get("owner")
+    repo = args.get("repo")
+    pull_number = args.get("pull_number")
+
+    if not all([owner, repo, pull_number]):
+        return [TextContent(type="text", text="Error: Missing required parameters. Required parameters are owner, repo, and pull_number.")]
+
+    # GitHub API URL for PR files
+    path = f"/repos/{owner}/{repo}/pulls/{pull_number}/files"
+    conn = None
+
+    try:
+        # Create connection
+        conn = http.client.HTTPSConnection("api.github.com")
+
+        # Set headers
+        headers = {
+            "Accept": "application/vnd.github.v3+json",
+            "User-Agent": "Python-MCP-Server"
+        }
+
+        # Add GitHub token if available
+        if token := os.environ.get("GITHUB_TOKEN"):
+            headers["Authorization"] = f"token {token}"
+
+        # Make request
+        conn.request("GET", path, headers=headers)
+        response = conn.getresponse()
+        if response.status == 404:
+            return [TextContent(type="text", text=f"Pull request #{pull_number} not found in repository {owner}/{repo}. "
+                                "Please set GITHUB_TOKEN environment variable if you are searching for private repositories.")]
+
+        if response.status != 200:
+            return [TextContent(type="text", text=f"Error fetching pull request files: {response.status} {response.reason}")]
+
+        # Read and parse response
+        files_data = json.loads(response.read())
+
+        # Format the files data for display
+        if not files_data:
+            return [TextContent(type="text", text=f"No files found in pull request #{pull_number}.")]
+
+        files_info = f"# Files Changed in Pull Request #{pull_number}\n\n"
+        
+        for file in files_data:
+            filename = file.get("filename", "Unknown file")
+            status = file.get("status", "unknown")
+            additions = file.get("additions", 0)
+            deletions = file.get("deletions", 0)
+            changes = file.get("changes", 0)
+            
+            status_emoji = "🆕" if status == "added" else "✏️" if status == "modified" else "🗑️" if status == "removed" else "📄"
+            files_info += f"{status_emoji} **{filename}** ({status})\n"
+            files_info += f"   - Additions: +{additions}, Deletions: -{deletions}, Total Changes: {changes}\n"
+            
+            # Add file URL if available
+            if blob_url := file.get("blob_url"):
+                files_info += f"   - [View File]({blob_url})\n"
+                
+            # Add patch information if available and not too large
+            if patch := file.get("patch"):
+                if len(patch) < 500:  # Only include patch if it's reasonably sized
+                    files_info += f"```diff\n{patch}\n```\n"
+                else:
+                    files_info += f"   - [Patch too large to display - view on GitHub]\n"
+            
+            files_info += "\n"
+        
+        # Add summary statistics
+        total_files = len(files_data)
+        total_additions = sum(file.get("additions", 0) for file in files_data)
+        total_deletions = sum(file.get("deletions", 0) for file in files_data)
+        
+        files_info += f"\n## Summary\n"
+        files_info += f"- Total Files Changed: {total_files}\n"
+        files_info += f"- Total Additions: +{total_additions}\n"
+        files_info += f"- Total Deletions: -{total_deletions}\n"
+        files_info += f"- Total Changes: {total_additions + total_deletions}\n"
+
+        return [TextContent(type="text", text=files_info)]
+
+    except Exception as e:
+        return [TextContent(type="text", text=f"Error fetching pull request files: {str(e)}")]
+    finally:
+        if conn is not None:
+            conn.close()

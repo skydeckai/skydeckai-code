@@ -1,4 +1,11 @@
-from .github_tools import create_pull_request_review_tool, get_issue_tool, handle_create_pull_request_review, handle_get_issue
+from .github_tools import (
+    create_pull_request_review_tool, 
+    get_issue_tool, 
+    get_pull_request_files_tool,
+    handle_create_pull_request_review, 
+    handle_get_issue,
+    handle_get_pull_request_files
+)
 from .code_analysis import handle_codebase_mapper, codebase_mapper_tool
 from .code_execution import (
     execute_code_tool,
@@ -86,6 +93,7 @@ TOOL_DEFINITIONS = [
     # Github tools
     get_issue_tool(),
     create_pull_request_review_tool(),
+    get_pull_request_files_tool(),
 ]
 
 # Export all handlers
@@ -123,4 +131,5 @@ TOOL_HANDLERS = {
     # Github handlers
     "get_issue": handle_get_issue,
     "create_pull_request_review": handle_create_pull_request_review,
+    "get_pull_request_files": handle_get_pull_request_files,
 }

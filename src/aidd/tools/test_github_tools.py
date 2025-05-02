@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from typing import Dict, Any
 import mcp.types as types
-from .github_tools import handle_get_issue, handle_create_pull_request_review
+from .github_tools import handle_get_issue, handle_create_pull_request_review, handle_get_pull_request_files
 
 
 @pytest.mark.asyncio
@@ -166,3 +166,149 @@ async def test_handle_get_issue_exception():
         assert len(result) == 1
         assert result[0].type == "text"
         assert "Error fetching issue" in result[0].text
+
+
+@pytest.mark.asyncio
+async def test_handle_get_pull_request_files_missing_params():
+    """Test that missing parameters return an error message"""
+    result = await handle_get_pull_request_files({})
+    assert isinstance(result, list)
+    assert len(result) == 1
+    assert result[0].type == "text"
+    assert "Missing required parameters" in result[0].text
+
+
+@pytest.mark.asyncio
+async def test_handle_get_pull_request_files_success():
+    """Test successful pull request files retrieval"""
+    mock_response = MagicMock()
+    mock_response.status = 200
+    mock_response.read.return_value = b'''[
+        {
+            "filename": "src/example.py",
+            "status": "modified",
+            "additions": 10,
+            "deletions": 2,
+            "changes": 12,
+            "blob_url": "https://github.com/owner/repo/blob/sha/src/example.py",
+            "patch": "@@ -10,2 +10,10 @@ class Example:\\n-    def old_method(self):\\n-        pass\\n+    def new_method(self):\\n+        return 'new implementation'"
+        },
+        {
+            "filename": "README.md",
+            "status": "added",
+            "additions": 15,
+            "deletions": 0,
+            "changes": 15,
+            "blob_url": "https://github.com/owner/repo/blob/sha/README.md"
+        },
+        {
+            "filename": "tests/old_test.py",
+            "status": "removed",
+            "additions": 0,
+            "deletions": 25,
+            "changes": 25,
+            "blob_url": "https://github.com/owner/repo/blob/sha/tests/old_test.py"
+        }
+    ]'''
+
+    with patch('http.client.HTTPSConnection') as mock_conn:
+        mock_conn.return_value.getresponse.return_value = mock_response
+        result = await handle_get_pull_request_files({
+            "owner": "test",
+            "repo": "repo",
+            "pull_number": 1
+        })
+
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0].type == "text"
+        assert "Files Changed in Pull Request #1" in result[0].text
+        assert "src/example.py" in result[0].text
+        assert "README.md" in result[0].text
+        assert "tests/old_test.py" in result[0].text
+        assert "modified" in result[0].text
+        assert "added" in result[0].text
+        assert "removed" in result[0].text
+        assert "Total Files Changed: 3" in result[0].text
+        assert "Total Additions: +25" in result[0].text
+        assert "Total Deletions: -27" in result[0].text
+
+
+@pytest.mark.asyncio
+async def test_handle_get_pull_request_files_empty():
+    """Test handling of pull request with no files"""
+    mock_response = MagicMock()
+    mock_response.status = 200
+    mock_response.read.return_value = b'[]'
+
+    with patch('http.client.HTTPSConnection') as mock_conn:
+        mock_conn.return_value.getresponse.return_value = mock_response
+        result = await handle_get_pull_request_files({
+            "owner": "test",
+            "repo": "repo",
+            "pull_number": 1
+        })
+
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0].type == "text"
+        assert "No files found in pull request #1" in result[0].text
+
+
+@pytest.mark.asyncio
+async def test_handle_get_pull_request_files_not_found():
+    """Test handling of non-existent pull request"""
+    mock_response = MagicMock()
+    mock_response.status = 404
+
+    with patch('http.client.HTTPSConnection') as mock_conn:
+        mock_conn.return_value.getresponse.return_value = mock_response
+        result = await handle_get_pull_request_files({
+            "owner": "test",
+            "repo": "repo",
+            "pull_number": 999
+        })
+
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0].type == "text"
+        assert "not found" in result[0].text.lower()
+
+
+@pytest.mark.asyncio
+async def test_handle_get_pull_request_files_error():
+    """Test handling of API error"""
+    mock_response = MagicMock()
+    mock_response.status = 500
+    mock_response.reason = "Internal Server Error"
+
+    with patch('http.client.HTTPSConnection') as mock_conn:
+        mock_conn.return_value.getresponse.return_value = mock_response
+        result = await handle_get_pull_request_files({
+            "owner": "test",
+            "repo": "repo",
+            "pull_number": 1
+        })
+
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0].type == "text"
+        assert "Error fetching pull request files" in result[0].text
+        assert "500" in result[0].text
+
+
+@pytest.mark.asyncio
+async def test_handle_get_pull_request_files_exception():
+    """Test handling of unexpected exceptions"""
+    with patch('http.client.HTTPSConnection') as mock_conn:
+        mock_conn.side_effect = Exception("Connection failed")
+        result = await handle_get_pull_request_files({
+            "owner": "test",
+            "repo": "repo",
+            "pull_number": 1
+        })
+
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0].type == "text"
+        assert "Error fetching pull request files" in result[0].text
