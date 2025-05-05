@@ -6,6 +6,7 @@ from mcp.types import TextContent, ErrorData
 
 # Tool definition
 
+
 def list_pull_requests_tool() -> Dict[str, Any]:
     return {
         "name": "list_pull_requests",
@@ -67,6 +68,7 @@ def list_pull_requests_tool() -> Dict[str, Any]:
             "required": ["owner", "repo"]
         },
     }
+
 
 def list_issues_tool() -> Dict[str, Any]:
     return {
@@ -174,7 +176,9 @@ def get_issue_tool() -> Dict[str, Any]:
 def create_pull_request_review_tool() -> Dict[str, Any]:
     return {
         "name": "create_pull_request_review",
-        "description": "Create a review for a pull request. Use this to approve, request changes, or comment on a PR. You can also submit code review comments.",
+        "description": "Create a review for a pull request. Use this to approve, request changes, or comment on a PR. You can also submit code review comments. "
+        "WHEN TO USE: When you need to review a pull request, you can use this tool to approve, request changes, or comment on a PR."
+        "RETURNS: A formatted markdown response containing the review's status, comments, and any additional information.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -183,7 +187,7 @@ def create_pull_request_review_tool() -> Dict[str, Any]:
                 "pull_number": {"type": "number", "description": "Pull request number"},
                 "event": {"type": "string", "description": "Review action: APPROVE, REQUEST_CHANGES, or COMMENT"},
                 "body": {"type": "string", "description": "Text of the review (optional)", "nullable": True},
-                "comments": {"type": "array", "items": {"type": "object"}, "description": "Array of review comments (optional)", "nullable": True},
+                "comments": {"type": "array", "items": {"type": "object"}, "description": "Array of review comments (optional) use this for inline comments", "nullable": True},
                 "commit_id": {"type": "string", "description": "SHA of commit to review (optional)", "nullable": True},
             },
             "required": ["owner", "repo", "pull_number", "event"]
@@ -483,12 +487,13 @@ async def handle_list_pull_requests(args: Dict[str, Any]) -> List[TextContent]:
 
         # Handle empty results
         if not pr_data:
-            status_label = "open" if state == "open" else ("closed" if state == "closed" else "matching your criteria")
+            status_label = "open" if state == "open" else (
+                "closed" if state == "closed" else "matching your criteria")
             return [TextContent(type="text", text=f"No {status_label} pull requests found in repository {owner}/{repo}.")]
 
         # Format the pull requests data for display
         pr_info = f"# Pull Requests in {owner}/{repo} ({state})\n\n"
-        
+
         # Create a table header
         pr_info += "| Number | Title | State | Creator | Head → Base | Created At |\n"
         pr_info += "|--------|-------|-------|---------|-------------|------------|\n"
@@ -499,12 +504,12 @@ async def handle_list_pull_requests(args: Dict[str, Any]) -> List[TextContent]:
             pr_state = pr.get("state", "unknown")
             creator = pr.get("user", {}).get("login", "unknown")
             created_at = pr.get("created_at", "unknown")
-            
+
             # Get branch information
             head_branch = f"{pr.get('head', {}).get('label', 'unknown')}"
             base_branch = f"{pr.get('base', {}).get('label', 'unknown')}"
             branch_info = f"{head_branch} → {base_branch}"
-            
+
             # Add row to table
             pr_info += f"| [{number}]({pr.get('html_url', '')}) | {title} | {pr_state} | {creator} | {branch_info} | {created_at} |\n"
 
@@ -578,12 +583,13 @@ async def handle_list_issues(args: Dict[str, Any]) -> List[TextContent]:
 
         # Handle empty results
         if not issues_data:
-            status_label = "open" if state == "open" else ("closed" if state == "closed" else "matching your criteria")
+            status_label = "open" if state == "open" else (
+                "closed" if state == "closed" else "matching your criteria")
             return [TextContent(type="text", text=f"No {status_label} issues found in repository {owner}/{repo}.")]
 
         # Format the issues data for display
         issues_info = f"# Issues in {owner}/{repo} ({state})\n\n"
-        
+
         # Create a table header
         issues_info += "| Number | Title | State | Creator | Labels | Created At |\n"
         issues_info += "|--------|-------|-------|---------|--------|------------|\n"
@@ -592,22 +598,24 @@ async def handle_list_issues(args: Dict[str, Any]) -> List[TextContent]:
             # Skip pull requests (which the API also returns)
             if issue.get("pull_request"):
                 continue
-                
+
             number = issue.get("number", "N/A")
             title = issue.get("title", "No title")
             issue_state = issue.get("state", "unknown")
             creator = issue.get("user", {}).get("login", "unknown")
             created_at = issue.get("created_at", "unknown")
-            
+
             # Format labels
-            label_names = [label.get("name", "") for label in issue.get("labels", [])]
+            label_names = [label.get("name", "")
+                           for label in issue.get("labels", [])]
             labels_str = ", ".join(label_names) if label_names else "none"
-            
+
             # Add row to table
             issues_info += f"| [{number}]({issue.get('html_url', '')}) | {title} | {issue_state} | {creator} | {labels_str} | {created_at} |\n"
 
         # Add summary
-        issues_count = len([i for i in issues_data if not i.get("pull_request")])
+        issues_count = len(
+            [i for i in issues_data if not i.get("pull_request")])
         issues_info += f"\n\n**Total issues found: {issues_count}**\n"
         issues_info += f"View all issues: https://github.com/{owner}/{repo}/issues\n"
 
