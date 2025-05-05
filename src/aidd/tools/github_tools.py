@@ -6,6 +6,68 @@ from mcp.types import TextContent, ErrorData
 
 # Tool definition
 
+def list_pull_requests_tool() -> Dict[str, Any]:
+    return {
+        "name": "list_pull_requests",
+        "description": "Lists pull requests in a GitHub repository. "
+        "WHEN TO USE: When you need to explore or search for pull requests in a repository, check what's currently open, "
+        "or filter by various criteria. Useful for project management, code review, "
+        "or understanding what work is in progress or needs review. "
+        "WHEN NOT TO USE: When you need detailed information about a single specific pull request. "
+        "Also not suitable for creating or modifying pull requests. "
+        "RETURNS: A formatted markdown response containing a list of pull requests matching the specified criteria, "
+        "including PR numbers, titles, states, creators, branches, and creation dates.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "owner": {
+                    "type": "string",
+                    "description": "Repository owner"
+                },
+                "repo": {
+                    "type": "string",
+                    "description": "Repository name"
+                },
+                "state": {
+                    "type": "string",
+                    "description": "Filter by pull request state: open, closed, or all",
+                    "enum": ["open", "closed", "all"],
+                    "default": "open"
+                },
+                "head": {
+                    "type": "string",
+                    "description": "Filter by head user/org and branch name (user:ref-name or org:ref-name)",
+                    "nullable": True
+                },
+                "base": {
+                    "type": "string",
+                    "description": "Filter by base branch name",
+                    "nullable": True
+                },
+                "sort": {
+                    "type": "string",
+                    "description": "How to sort the results",
+                    "enum": ["created", "updated", "popularity", "long-running"],
+                    "default": "created"
+                },
+                "direction": {
+                    "type": "string",
+                    "description": "Sort direction: asc or desc",
+                    "enum": ["asc", "desc"],
+                    "default": "desc"
+                },
+                "per_page": {
+                    "type": "number",
+                    "description": "Results per page (max 100)",
+                    "default": 30,
+                    "minimum": 1,
+                    "maximum": 100
+                }
+            },
+            "required": ["owner", "repo"]
+        },
+    }
+
 def list_issues_tool() -> Dict[str, Any]:
     return {
         "name": "list_issues",
@@ -362,6 +424,98 @@ async def handle_get_pull_request_files(args: Dict[str, Any]) -> List[TextConten
 
     except Exception as e:
         return [TextContent(type="text", text=f"Error fetching pull request files: {str(e)}")]
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+async def handle_list_pull_requests(args: Dict[str, Any]) -> List[TextContent]:
+    owner = args.get("owner")
+    repo = args.get("repo")
+    state = args.get("state", "open")
+    head = args.get("head")
+    base = args.get("base")
+    sort = args.get("sort", "created")
+    direction = args.get("direction", "desc")
+    per_page = args.get("per_page", 30)
+
+    # Validate required parameters
+    if not all([owner, repo]):
+        return [TextContent(type="text", text="Error: Missing required parameters. Required parameters are owner and repo.")]
+
+    # Build query parameters
+    query_params = f"state={state}&sort={sort}&direction={direction}&per_page={per_page}"
+    if head:
+        query_params += f"&head={head}"
+    if base:
+        query_params += f"&base={base}"
+
+    # GitHub API URL
+    path = f"/repos/{owner}/{repo}/pulls?{query_params}"
+    conn = None
+
+    try:
+        # Create connection
+        conn = http.client.HTTPSConnection("api.github.com")
+
+        # Set headers
+        headers = {
+            "Accept": "application/vnd.github.v3+json",
+            "User-Agent": "Python-MCP-Server"
+        }
+
+        # Add GitHub token if available
+        if token := os.environ.get("GITHUB_TOKEN"):
+            headers["Authorization"] = f"token {token}"
+
+        # Make request
+        conn.request("GET", path, headers=headers)
+        response = conn.getresponse()
+        if response.status == 404:
+            return [TextContent(type="text", text=f"Repository {owner}/{repo} not found. "
+                                "Please set GITHUB_TOKEN environment variable if you are searching for private repositories.")]
+
+        if response.status != 200:
+            return [TextContent(type="text", text=f"Error fetching pull requests: {response.status} {response.reason}")]
+
+        # Read and parse response
+        pr_data = json.loads(response.read())
+
+        # Handle empty results
+        if not pr_data:
+            status_label = "open" if state == "open" else ("closed" if state == "closed" else "matching your criteria")
+            return [TextContent(type="text", text=f"No {status_label} pull requests found in repository {owner}/{repo}.")]
+
+        # Format the pull requests data for display
+        pr_info = f"# Pull Requests in {owner}/{repo} ({state})\n\n"
+        
+        # Create a table header
+        pr_info += "| Number | Title | State | Creator | Head → Base | Created At |\n"
+        pr_info += "|--------|-------|-------|---------|-------------|------------|\n"
+
+        for pr in pr_data:
+            number = pr.get("number", "N/A")
+            title = pr.get("title", "No title")
+            pr_state = pr.get("state", "unknown")
+            creator = pr.get("user", {}).get("login", "unknown")
+            created_at = pr.get("created_at", "unknown")
+            
+            # Get branch information
+            head_branch = f"{pr.get('head', {}).get('label', 'unknown')}"
+            base_branch = f"{pr.get('base', {}).get('label', 'unknown')}"
+            branch_info = f"{head_branch} → {base_branch}"
+            
+            # Add row to table
+            pr_info += f"| [{number}]({pr.get('html_url', '')}) | {title} | {pr_state} | {creator} | {branch_info} | {created_at} |\n"
+
+        # Add summary
+        pr_info += f"\n\n**Total pull requests found: {len(pr_data)}**\n"
+        pr_info += f"View all pull requests: https://github.com/{owner}/{repo}/pulls\n"
+
+        return [TextContent(type="text", text=pr_info)]
+
+    except Exception as e:
+        return [TextContent(type="text", text=f"Error fetching pull requests: {str(e)}")]
     finally:
         if conn is not None:
             conn.close()

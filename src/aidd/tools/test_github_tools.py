@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from typing import Dict, Any
 import mcp.types as types
-from .github_tools import handle_get_issue, handle_create_pull_request_review, handle_get_pull_request_files, handle_list_issues
+from .github_tools import handle_get_issue, handle_create_pull_request_review, handle_get_pull_request_files, handle_list_issues, handle_list_pull_requests
 
 
 @pytest.mark.asyncio
@@ -460,3 +460,142 @@ async def test_handle_list_issues_exception():
         assert len(result) == 1
         assert result[0].type == "text"
         assert "Error fetching issues" in result[0].text
+
+
+@pytest.mark.asyncio
+async def test_handle_list_pull_requests_missing_params():
+    """Test that missing parameters return an error message"""
+    result = await handle_list_pull_requests({})
+    assert isinstance(result, list)
+    assert len(result) == 1
+    assert result[0].type == "text"
+    assert "Missing required parameters" in result[0].text
+
+
+@pytest.mark.asyncio
+async def test_handle_list_pull_requests_success():
+    """Test successful pull requests listing"""
+    mock_response = MagicMock()
+    mock_response.status = 200
+    mock_response.read.return_value = b'''[
+        {
+            "number": 1,
+            "title": "First PR",
+            "state": "open",
+            "user": {"login": "testuser"},
+            "created_at": "2024-01-01T00:00:00Z",
+            "html_url": "https://github.com/test/repo/pulls/1",
+            "head": {"label": "testuser:feature-branch"},
+            "base": {"label": "test:main"}
+        },
+        {
+            "number": 2,
+            "title": "Second PR",
+            "state": "open",
+            "user": {"login": "otheruser"},
+            "created_at": "2024-01-02T00:00:00Z",
+            "html_url": "https://github.com/test/repo/pulls/2",
+            "head": {"label": "otheruser:bugfix-branch"},
+            "base": {"label": "test:main"}
+        }
+    ]'''
+
+    with patch('http.client.HTTPSConnection') as mock_conn:
+        mock_conn.return_value.getresponse.return_value = mock_response
+        result = await handle_list_pull_requests({
+            "owner": "test",
+            "repo": "repo",
+            "state": "open"
+        })
+
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0].type == "text"
+        assert "Pull Requests in test/repo (open)" in result[0].text
+        assert "First PR" in result[0].text
+        assert "Second PR" in result[0].text
+        assert "Total pull requests found: 2" in result[0].text
+        assert "testuser:feature-branch → test:main" in result[0].text
+        assert "otheruser:bugfix-branch → test:main" in result[0].text
+        assert "testuser" in result[0].text
+        assert "otheruser" in result[0].text
+
+
+@pytest.mark.asyncio
+async def test_handle_list_pull_requests_empty():
+    """Test handling of repo with no pull requests"""
+    mock_response = MagicMock()
+    mock_response.status = 200
+    mock_response.read.return_value = b'[]'
+
+    with patch('http.client.HTTPSConnection') as mock_conn:
+        mock_conn.return_value.getresponse.return_value = mock_response
+        result = await handle_list_pull_requests({
+            "owner": "test",
+            "repo": "repo",
+            "state": "open"
+        })
+
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0].type == "text"
+        assert "No open pull requests found in repository test/repo" in result[0].text
+
+
+@pytest.mark.asyncio
+async def test_handle_list_pull_requests_not_found():
+    """Test handling of non-existent repository"""
+    mock_response = MagicMock()
+    mock_response.status = 404
+
+    with patch('http.client.HTTPSConnection') as mock_conn:
+        mock_conn.return_value.getresponse.return_value = mock_response
+        result = await handle_list_pull_requests({
+            "owner": "test",
+            "repo": "nonexistent",
+            "state": "open"
+        })
+
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0].type == "text"
+        assert "not found" in result[0].text.lower()
+
+
+@pytest.mark.asyncio
+async def test_handle_list_pull_requests_error():
+    """Test handling of API error"""
+    mock_response = MagicMock()
+    mock_response.status = 500
+    mock_response.reason = "Internal Server Error"
+
+    with patch('http.client.HTTPSConnection') as mock_conn:
+        mock_conn.return_value.getresponse.return_value = mock_response
+        result = await handle_list_pull_requests({
+            "owner": "test",
+            "repo": "repo",
+            "state": "open"
+        })
+
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0].type == "text"
+        assert "Error fetching pull requests" in result[0].text
+        assert "500" in result[0].text
+
+
+@pytest.mark.asyncio
+async def test_handle_list_pull_requests_exception():
+    """Test handling of unexpected exceptions"""
+    with patch('http.client.HTTPSConnection') as mock_conn:
+        mock_conn.side_effect = Exception("Connection failed")
+        result = await handle_list_pull_requests({
+            "owner": "test",
+            "repo": "repo",
+            "state": "open"
+        })
+
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0].type == "text"
+        assert "Error fetching pull requests" in result[0].text

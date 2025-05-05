@@ -2,7 +2,7 @@ import pytest
 import os
 from typing import Dict, Any
 from mcp.types import TextContent
-from .github_tools import handle_get_issue, handle_create_pull_request_review, handle_get_pull_request_files, handle_list_issues
+from .github_tools import handle_get_issue, handle_create_pull_request_review, handle_get_pull_request_files, handle_list_issues, handle_list_pull_requests
 
 
 @pytest.mark.asyncio
@@ -212,6 +212,100 @@ async def test_handle_list_issues_not_found_real_api():
 async def test_handle_list_issues_private_repo():
     """Test handling of private repository access"""
     result = await handle_list_issues({
+        "owner": "github",
+        "repo": "github",  # This is a private repository
+        "state": "open"
+    })
+
+    assert isinstance(result, list)
+    assert len(result) == 1
+    assert isinstance(result[0], TextContent)
+    assert result[0].type == "text"
+    assert "error" in result[0].text.lower() or "not found" in result[0].text.lower()
+
+
+@pytest.mark.asyncio
+async def test_handle_list_pull_requests_real_api():
+    """Test the list_pull_requests tool against the real GitHub API"""
+    # Test with a well-known public repository
+    result = await handle_list_pull_requests({
+        "owner": "python",
+        "repo": "cpython",
+        "state": "open"
+    })
+
+    assert isinstance(result, list)
+    assert len(result) == 1
+    assert isinstance(result[0], TextContent)
+    assert result[0].type == "text"
+    assert "Pull Requests in python/cpython (open)" in result[0].text
+    # Check for table headers
+    assert "| Number | Title | State | Creator | Head → Base | Created At |" in result[0].text
+    # Check for summary
+    assert "Total pull requests found:" in result[0].text
+
+
+@pytest.mark.asyncio
+async def test_handle_list_pull_requests_closed_real_api():
+    """Test the list_pull_requests tool with closed pull requests against the real GitHub API"""
+    result = await handle_list_pull_requests({
+        "owner": "python",
+        "repo": "cpython",
+        "state": "closed",
+        "per_page": 10
+    })
+
+    assert isinstance(result, list)
+    assert len(result) == 1
+    assert isinstance(result[0], TextContent)
+    assert result[0].type == "text"
+    assert "Pull Requests in python/cpython (closed)" in result[0].text
+    # Check for table headers
+    assert "| Number | Title | State | Creator | Head → Base | Created At |" in result[0].text
+    # Check for summary
+    assert "Total pull requests found:" in result[0].text
+
+
+@pytest.mark.asyncio
+async def test_handle_list_pull_requests_filtered_real_api():
+    """Test the list_pull_requests tool with filters against the real GitHub API"""
+    result = await handle_list_pull_requests({
+        "owner": "python",
+        "repo": "cpython",
+        "state": "open",
+        "base": "main",
+        "sort": "updated",
+        "direction": "desc",
+        "per_page": 5
+    })
+
+    assert isinstance(result, list)
+    assert len(result) == 1
+    assert isinstance(result[0], TextContent)
+    assert result[0].type == "text"
+    assert "Pull Requests in python/cpython (open)" in result[0].text
+
+
+@pytest.mark.asyncio
+async def test_handle_list_pull_requests_not_found_real_api():
+    """Test handling of non-existent repository against the real GitHub API"""
+    result = await handle_list_pull_requests({
+        "owner": "python",
+        "repo": "nonexistent_repo_name_abc123",  # This shouldn't exist
+        "state": "open"
+    })
+
+    assert isinstance(result, list)
+    assert len(result) == 1
+    assert isinstance(result[0], TextContent)
+    assert result[0].type == "text"
+    assert "not found" in result[0].text.lower()
+
+
+@pytest.mark.asyncio
+async def test_handle_list_pull_requests_private_repo():
+    """Test handling of private repository access"""
+    result = await handle_list_pull_requests({
         "owner": "github",
         "repo": "github",  # This is a private repository
         "state": "open"
