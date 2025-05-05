@@ -107,6 +107,7 @@ async def handle_create_pull_request_review(args: Dict[str, Any]) -> List[TextCo
         if conn:
             conn.close()
 
+
 async def handle_get_issue(args: Dict[str, Any]) -> List[TextContent]:
     owner = args.get("owner")
     repo = args.get("repo")
@@ -254,36 +255,36 @@ async def handle_get_pull_request_files(args: Dict[str, Any]) -> List[TextConten
             return [TextContent(type="text", text=f"No files found in pull request #{pull_number}.")]
 
         files_info = f"# Files Changed in Pull Request #{pull_number}\n\n"
-        
+
         for file in files_data:
             filename = file.get("filename", "Unknown file")
             status = file.get("status", "unknown")
             additions = file.get("additions", 0)
             deletions = file.get("deletions", 0)
             changes = file.get("changes", 0)
-            
+
             status_emoji = "🆕" if status == "added" else "✏️" if status == "modified" else "🗑️" if status == "removed" else "📄"
             files_info += f"{status_emoji} **{filename}** ({status})\n"
             files_info += f"   - Additions: +{additions}, Deletions: -{deletions}, Total Changes: {changes}\n"
-            
+
             # Add file URL if available
             if blob_url := file.get("blob_url"):
                 files_info += f"   - [View File]({blob_url})\n"
-                
+
             # Add patch information if available and not too large
             if patch := file.get("patch"):
-                if len(patch) < 500:  # Only include patch if it's reasonably sized
-                    files_info += f"```diff\n{patch}\n```\n"
+                if len(patch) < 10000:  # Only include patch if it's reasonably sized
+                    files_info = f"```diff\n{patch}\n```\n"
                 else:
                     files_info += f"   - [Patch too large to display - view on GitHub]\n"
-            
+
             files_info += "\n"
-        
+
         # Add summary statistics
         total_files = len(files_data)
         total_additions = sum(file.get("additions", 0) for file in files_data)
         total_deletions = sum(file.get("deletions", 0) for file in files_data)
-        
+
         files_info += f"\n## Summary\n"
         files_info += f"- Total Files Changed: {total_files}\n"
         files_info += f"- Total Additions: +{total_additions}\n"
