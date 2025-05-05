@@ -1,10 +1,77 @@
 import http.client
 import json
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from mcp.types import TextContent, ErrorData
 
 # Tool definition
+
+def list_issues_tool() -> Dict[str, Any]:
+    return {
+        "name": "list_issues",
+        "description": "Lists issues in a GitHub repository. "
+        "WHEN TO USE: When you need to explore or search for issues in a repository, check what's currently open, "
+        "assigned to specific users, or filter by various criteria. Useful for project management, bug tracking, "
+        "or understanding what work is in progress or needs attention. "
+        "WHEN NOT TO USE: When you need detailed information about a single specific issue - use get_issue instead. "
+        "Also not suitable for creating or modifying issues. "
+        "RETURNS: A formatted markdown response containing a list of issues matching the specified criteria, "
+        "including issue numbers, titles, states, creators, labels, and creation dates.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "owner": {
+                    "type": "string",
+                    "description": "Repository owner"
+                },
+                "repo": {
+                    "type": "string",
+                    "description": "Repository name"
+                },
+                "state": {
+                    "type": "string",
+                    "description": "Filter by issue state: open, closed, or all",
+                    "enum": ["open", "closed", "all"],
+                    "default": "open"
+                },
+                "labels": {
+                    "type": "string",
+                    "description": "Filter by comma-separated list of labels",
+                    "nullable": True
+                },
+                "assignee": {
+                    "type": "string",
+                    "description": "Filter by assignee username",
+                    "nullable": True
+                },
+                "creator": {
+                    "type": "string",
+                    "description": "Filter by creator username",
+                    "nullable": True
+                },
+                "sort": {
+                    "type": "string",
+                    "description": "How to sort the results",
+                    "enum": ["created", "updated", "comments"],
+                    "default": "created"
+                },
+                "direction": {
+                    "type": "string",
+                    "description": "Sort direction: asc or desc",
+                    "enum": ["asc", "desc"],
+                    "default": "desc"
+                },
+                "per_page": {
+                    "type": "number",
+                    "description": "Results per page (max 100)",
+                    "default": 30,
+                    "minimum": 1,
+                    "maximum": 100
+                }
+            },
+            "required": ["owner", "repo"]
+        },
+    }
 
 
 def get_issue_tool() -> Dict[str, Any]:
@@ -274,7 +341,7 @@ async def handle_get_pull_request_files(args: Dict[str, Any]) -> List[TextConten
             # Add patch information if available and not too large
             if patch := file.get("patch"):
                 if len(patch) < 10000:  # Only include patch if it's reasonably sized
-                    files_info = f"```diff\n{patch}\n```\n"
+                    files_info += f"```diff\n{patch}\n```\n"
                 else:
                     files_info += f"   - [Patch too large to display - view on GitHub]\n"
 
@@ -295,6 +362,105 @@ async def handle_get_pull_request_files(args: Dict[str, Any]) -> List[TextConten
 
     except Exception as e:
         return [TextContent(type="text", text=f"Error fetching pull request files: {str(e)}")]
+    finally:
+        if conn is not None:
+            conn.close()
+
+
+async def handle_list_issues(args: Dict[str, Any]) -> List[TextContent]:
+    owner = args.get("owner")
+    repo = args.get("repo")
+    state = args.get("state", "open")
+    labels = args.get("labels")
+    assignee = args.get("assignee")
+    creator = args.get("creator")
+    sort = args.get("sort", "created")
+    direction = args.get("direction", "desc")
+    per_page = args.get("per_page", 30)
+
+    # Validate required parameters
+    if not all([owner, repo]):
+        return [TextContent(type="text", text="Error: Missing required parameters. Required parameters are owner and repo.")]
+
+    # Build query parameters
+    query_params = f"state={state}&sort={sort}&direction={direction}&per_page={per_page}"
+    if labels:
+        query_params += f"&labels={labels}"
+    if assignee:
+        query_params += f"&assignee={assignee}"
+    if creator:
+        query_params += f"&creator={creator}"
+
+    # GitHub API URL
+    path = f"/repos/{owner}/{repo}/issues?{query_params}"
+    conn = None
+
+    try:
+        # Create connection
+        conn = http.client.HTTPSConnection("api.github.com")
+
+        # Set headers
+        headers = {
+            "Accept": "application/vnd.github.v3+json",
+            "User-Agent": "Python-MCP-Server"
+        }
+
+        # Add GitHub token if available
+        if token := os.environ.get("GITHUB_TOKEN"):
+            headers["Authorization"] = f"token {token}"
+
+        # Make request
+        conn.request("GET", path, headers=headers)
+        response = conn.getresponse()
+        if response.status == 404:
+            return [TextContent(type="text", text=f"Repository {owner}/{repo} not found. "
+                                "Please set GITHUB_TOKEN environment variable if you are searching for private repositories.")]
+
+        if response.status != 200:
+            return [TextContent(type="text", text=f"Error fetching issues: {response.status} {response.reason}")]
+
+        # Read and parse response
+        issues_data = json.loads(response.read())
+
+        # Handle empty results
+        if not issues_data:
+            status_label = "open" if state == "open" else ("closed" if state == "closed" else "matching your criteria")
+            return [TextContent(type="text", text=f"No {status_label} issues found in repository {owner}/{repo}.")]
+
+        # Format the issues data for display
+        issues_info = f"# Issues in {owner}/{repo} ({state})\n\n"
+        
+        # Create a table header
+        issues_info += "| Number | Title | State | Creator | Labels | Created At |\n"
+        issues_info += "|--------|-------|-------|---------|--------|------------|\n"
+
+        for issue in issues_data:
+            # Skip pull requests (which the API also returns)
+            if issue.get("pull_request"):
+                continue
+                
+            number = issue.get("number", "N/A")
+            title = issue.get("title", "No title")
+            issue_state = issue.get("state", "unknown")
+            creator = issue.get("user", {}).get("login", "unknown")
+            created_at = issue.get("created_at", "unknown")
+            
+            # Format labels
+            label_names = [label.get("name", "") for label in issue.get("labels", [])]
+            labels_str = ", ".join(label_names) if label_names else "none"
+            
+            # Add row to table
+            issues_info += f"| [{number}]({issue.get('html_url', '')}) | {title} | {issue_state} | {creator} | {labels_str} | {created_at} |\n"
+
+        # Add summary
+        issues_count = len([i for i in issues_data if not i.get("pull_request")])
+        issues_info += f"\n\n**Total issues found: {issues_count}**\n"
+        issues_info += f"View all issues: https://github.com/{owner}/{repo}/issues\n"
+
+        return [TextContent(type="text", text=issues_info)]
+
+    except Exception as e:
+        return [TextContent(type="text", text=f"Error fetching issues: {str(e)}")]
     finally:
         if conn is not None:
             conn.close()
