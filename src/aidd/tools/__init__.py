@@ -1,13 +1,9 @@
 from .github_tools import (
     create_pull_request_review_tool, 
-    get_issue_tool, 
     get_pull_request_files_tool,
-    list_issues_tool,
     list_pull_requests_tool,
     handle_create_pull_request_review, 
-    handle_get_issue,
     handle_get_pull_request_files,
-    handle_list_issues,
     handle_list_pull_requests
 )
 from .code_analysis import handle_codebase_mapper, codebase_mapper_tool
@@ -95,8 +91,6 @@ TOOL_DEFINITIONS = [
     # System tools
     get_system_info_tool(),
     # Github tools
-    get_issue_tool(),
-    list_issues_tool(),
     list_pull_requests_tool(),
     create_pull_request_review_tool(),
     get_pull_request_files_tool(),
@@ -135,8 +129,6 @@ TOOL_HANDLERS = {
     "web_fetch": handle_web_fetch,
     "web_search": handle_web_search,
     # Github handlers
-    "get_issue": handle_get_issue,
-    "list_issues": handle_list_issues,
     "list_pull_requests": handle_list_pull_requests,
     "create_pull_request_review": handle_create_pull_request_review,
     "get_pull_request_files": handle_get_pull_request_files,
