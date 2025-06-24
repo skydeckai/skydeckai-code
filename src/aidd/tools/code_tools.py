@@ -5,7 +5,8 @@ import subprocess
 import json
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Union, Tuple
-
+import platform
+import stat
 from mcp.types import TextContent
 from .state import state
 
@@ -65,7 +66,14 @@ def search_code_tool():
                                    "Examples: '.' for current directory, 'src' to search only within src directory. "
                                    "Default is the root of the allowed directory.",
                     "default": "."
-                }
+                },
+                "include_hidden": {
+                    "type": "boolean",
+                    "description": "Whether to include hidden files. When true, also include the hidden files like"
+                                   ".env, .config on Unix/Posix/Linux, or files with hidden attribute on Windows"
+                                   "Default is false, which exclude the hidden files from search",
+                    "default": False,
+                },
             },
             "required": ["patterns"]
         }
@@ -80,6 +88,7 @@ async def handle_search_code(arguments: dict) -> List[TextContent]:
     max_results = arguments.get("max_results", 100)
     case_sensitive = arguments.get("case_sensitive", False)
     path = arguments.get("path", ".")
+    include_hidden = arguments.get("include_hidden", False)
 
     if not patterns:
         raise ValueError("At least one pattern must be provided")
@@ -109,12 +118,12 @@ async def handle_search_code(arguments: dict) -> List[TextContent]:
                 # Use ripgrep if available for faster results
                 try:
                     result = await _search_with_ripgrep(
-                        pattern, include, exclude, max_results, case_sensitive, full_path
+                        pattern, include, exclude, max_results, case_sensitive, full_path, include_hidden
                     )
                 except (subprocess.SubprocessError, FileNotFoundError):
                     # Fallback to Python implementation if ripgrep not available
                     result = await _search_with_python(
-                        pattern, include, exclude, max_results, case_sensitive, full_path
+                        pattern, include, exclude, max_results, case_sensitive, full_path, include_hidden
                     )
 
                 # Add pattern header for multiple patterns
@@ -139,7 +148,8 @@ async def _search_with_ripgrep(
     exclude: str,
     max_results: int,
     case_sensitive: bool,
-    full_path: str
+    full_path: str,
+    include_hidden: bool
 ) -> List[TextContent]:
     """Search using ripgrep for better performance."""
     cmd = ["rg", "--line-number"]
@@ -160,6 +170,10 @@ async def _search_with_ripgrep(
 
     # Add max results
     cmd.extend(["--max-count", str(max_results)])
+
+    # Add hidden files
+    if include_hidden:
+        cmd.append("--hidden")
 
     # Add pattern and path
     cmd.extend([pattern, full_path])
@@ -247,7 +261,8 @@ async def _search_with_python(
     exclude: str,
     max_results: int,
     case_sensitive: bool,
-    full_path: str
+    full_path: str,
+    include_hidden: bool
 ) -> List[TextContent]:
     """Fallback search implementation using Python's regex and file operations."""
     # Compile the regex pattern
@@ -273,9 +288,16 @@ async def _search_with_python(
     match_count = 0
 
     # Walk the directory tree
-    for root, _, files in os.walk(full_path):
+    for root, dirs, files in os.walk(full_path):
         if match_count >= max_results:
             break
+
+        if not include_hidden:
+            # Remove hidden directories from dirs list to prevent os.walk from entering them
+            dirs[:] = [d for d in dirs if not is_hidden(os.path.join(root, d))] 
+
+            # Filter out hidden files
+            files = [f for f in files if not is_hidden(os.path.join(root, f))]
 
         for filename in files:
             if match_count >= max_results:
@@ -371,3 +393,27 @@ async def _search_with_python(
         type="text",
         text="\n".join(formatted_output)
     )]
+
+
+def is_hidden_windows(filepath: str) -> bool:
+    """Check if file/folder is hidden on Windows"""
+    try:
+        attrs = os.stat(filepath).st_file_attributes
+        return attrs & stat.FILE_ATTRIBUTE_HIDDEN
+    except (AttributeError, OSError):
+        return False
+
+
+def is_hidden_unix(name: str) -> bool:
+    """Check if file/folder is hidden on Unix-like systems (Linux/macOS)"""
+    return name.startswith('.')
+
+
+def is_hidden(filepath: str) -> bool:
+    """Cross-platform hidden file/folder detection"""
+    name = os.path.basename(filepath)
+    
+    if platform.system() == 'Windows':
+        return is_hidden_windows(filepath) or name.startswith('.')
+    else:
+        return is_hidden_unix(name)
