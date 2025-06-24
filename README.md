@@ -45,6 +45,7 @@ If you're using SkyDeck AI Helper app, you can search for "SkyDeckAI Code" and i
 -   Multi-language code analysis using tree-sitter
 -   Code content searching with regex pattern matching
 -   Multi-language code execution with safety measures
+-   GitHub integration for pull request management and code reviews
 -   Web content fetching from APIs and websites with HTML-to-markdown conversion
 -   Multi-engine web search with reliable fallback mechanisms
 -   Batch operations for parallel and serial tool execution
@@ -52,36 +53,39 @@ If you're using SkyDeck AI Helper app, you can search for "SkyDeckAI Code" and i
 -   Screenshot and screen context tools
 -   Image handling tools
 
-## Available Tools (26)
+## Available Tools (29)
 
-| Category         | Tool Name                  | Description                                  |
-| ---------------- | -------------------------- | -------------------------------------------- |
-| **File System**  | `get_allowed_directory`    | Get the current working directory path       |
-|                  | `update_allowed_directory` | Change the working directory                 |
-|                  | `create_directory`         | Create a new directory or nested directories |
-|                  | `write_file`               | Create or overwrite a file with new content  |
-|                  | `edit_file`                | Make line-based edits to a text file         |
-|                  | `read_file`                | Read the contents of one or more files       |
-|                  | `list_directory`           | Get listing of files and directories         |
-|                  | `move_file`                | Move or rename a file or directory           |
-|                  | `copy_file`                | Copy a file or directory to a new location   |
-|                  | `search_files`             | Search for files matching a name pattern     |
-|                  | `delete_file`              | Delete a file or empty directory             |
-|                  | `get_file_info`            | Get detailed file metadata                   |
-|                  | `directory_tree`           | Get a recursive tree view of directories     |
-|                  | `read_image_file`          | Read an image file as base64 data            |
-| **Code Tools**   | `codebase_mapper`          | Analyze code structure across files          |
-|                  | `search_code`              | Find text patterns in code files             |
-|                  | `execute_code`             | Run code in various languages                |
-|                  | `execute_shell_script`     | Run shell/bash scripts                       |
-| **Web Tools**    | `web_fetch`                | Get content from a URL                       |
-|                  | `web_search`               | Perform a web search                         |
-| **Screen Tools** | `capture_screenshot`       | Take a screenshot of screen or window        |
-|                  | `get_active_apps`          | List running applications                    |
-|                  | `get_available_windows`    | List all open windows                        |
-| **System**       | `get_system_info`          | Get detailed system information              |
-| **Utility**      | `batch_tools`              | Run multiple tool operations together        |
-|                  | `think`                    | Document reasoning without making changes    |
+| Category         | Tool Name                      | Description                                  |
+| ---------------- | ------------------------------ | -------------------------------------------- |
+| **File System**  | `get_allowed_directory`        | Get the current working directory path       |
+|                  | `update_allowed_directory`     | Change the working directory                 |
+|                  | `create_directory`             | Create a new directory or nested directories |
+|                  | `write_file`                   | Create or overwrite a file with new content  |
+|                  | `edit_file`                    | Make line-based edits to a text file         |
+|                  | `read_file`                    | Read the contents of one or more files       |
+|                  | `list_directory`               | Get listing of files and directories         |
+|                  | `move_file`                    | Move or rename a file or directory           |
+|                  | `copy_file`                    | Copy a file or directory to a new location   |
+|                  | `search_files`                 | Search for files matching a name pattern     |
+|                  | `delete_file`                  | Delete a file or empty directory             |
+|                  | `get_file_info`                | Get detailed file metadata                   |
+|                  | `directory_tree`               | Get a recursive tree view of directories     |
+|                  | `read_image_file`              | Read an image file as base64 data            |
+| **Code Tools**   | `codebase_mapper`              | Analyze code structure across files          |
+|                  | `search_code`                  | Find text patterns in code files             |
+|                  | `execute_code`                 | Run code in various languages                |
+|                  | `execute_shell_script`         | Run shell/bash scripts                       |
+| **GitHub**       | `list_pull_requests`           | List and filter repository pull requests     |
+|                  | `create_pull_request_review`   | Create a review for a pull request           |
+|                  | `get_pull_request_files`       | Get files changed in a pull request          |
+| **Web Tools**    | `web_fetch`                    | Get content from a URL                       |
+|                  | `web_search`                   | Perform a web search                         |
+| **Screen Tools** | `capture_screenshot`           | Take a screenshot of screen or window        |
+|                  | `get_active_apps`              | List running applications                    |
+|                  | `get_available_windows`        | List all open windows                        |
+| **System**       | `get_system_info`              | Get detailed system information              |
+| **Utility**      | `batch_tools`                  | Run multiple tool operations together        |
+|                  | `think`                        | Document reasoning without making changes    |
 
 ## Detailed Tool Documentation
 
@@ -552,6 +556,139 @@ skydeckai-code-cli --tool web_search --args '{
 }'
 ```
 
+### GitHub Tools
+
+#### list_pull_requests
+
+Lists and filters pull requests for a GitHub repository:
+
+```json
+{
+    "owner": "octocat",
+    "repo": "hello-world",
+    "state": "open",
+    "sort": "created",
+    "direction": "desc",
+    "per_page": 10
+}
+```
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| owner | string | Yes | Repository owner (username or organization) |
+| repo | string | Yes | Repository name |
+| state | string | No | Filter by pull request state: "open", "closed", or "all" (default: "open") |
+| head | string | No | Filter by head user/org and branch name (format: "user:ref-name" or "org:ref-name") |
+| base | string | No | Filter by base branch name |
+| sort | string | No | How to sort the results: "created", "updated", "popularity", "long-running" (default: "created") |
+| direction | string | No | Sort direction: "asc" or "desc" (default: "desc") |
+| per_page | number | No | Results per page, max 100 (default: 30) |
+
+**Returns:**
+A formatted list of pull requests with details including number, title, state, creator, branch information, and creation date.
+
+**CLI Usage:**
+
+```bash
+# List open pull requests in a repository
+skydeckai-code-cli --tool list_pull_requests --args '{
+    "owner": "octocat",
+    "repo": "hello-world"
+}'
+
+# List closed pull requests sorted by update time
+skydeckai-code-cli --tool list_pull_requests --args '{
+    "owner": "octocat",
+    "repo": "hello-world",
+    "state": "closed",
+    "sort": "updated"
+}'
+```
+
+#### create_pull_request_review
+
+Creates a review for a GitHub pull request:
+
+```json
+{
+    "owner": "octocat",
+    "repo": "hello-world",
+    "pull_number": 42,
+    "event": "APPROVE",
+    "body": "LGTM! The code looks great."
+}
+```
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| owner | string | Yes | Repository owner (username or organization) |
+| repo | string | Yes | Repository name |
+| pull_number | number | Yes | Pull request number |
+| event | string | Yes | Review action: "APPROVE", "REQUEST_CHANGES", or "COMMENT" |
+| body | string | No | Text of the review |
+| comments | array | No | Array of review comments (for inline comments) |
+| commit_id | string | No | SHA of commit to review |
+
+**Returns:**
+Confirmation of the created review with details from the GitHub API response.
+
+**CLI Usage:**
+
+```bash
+# Approve a pull request
+skydeckai-code-cli --tool create_pull_request_review --args '{
+    "owner": "octocat",
+    "repo": "hello-world",
+    "pull_number": 42,
+    "event": "APPROVE",
+    "body": "The changes look good!"
+}'
+
+# Request changes on a pull request
+skydeckai-code-cli --tool create_pull_request_review --args '{
+    "owner": "octocat",
+    "repo": "hello-world",
+    "pull_number": 42,
+    "event": "REQUEST_CHANGES",
+    "body": "Please add tests for this feature."
+}'
+```
+
+#### get_pull_request_files
+
+Retrieves the list of files changed in a GitHub pull request:
+
+```json
+{
+    "owner": "octocat",
+    "repo": "hello-world",
+    "pull_number": 42
+}
+```
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| owner | string | Yes | Repository owner (username or organization) |
+| repo | string | Yes | Repository name |
+| pull_number | number | Yes | Pull request number |
+
+**Returns:**
+A formatted list of changed files with details including filename, status (added, modified, removed), additions, deletions, total changes, and file URLs. Also includes a diff patch for each file and summary statistics.
+
+**CLI Usage:**
+
+```bash
+# Get files changed in a pull request
+skydeckai-code-cli --tool get_pull_request_files --args '{
+    "owner": "octocat",
+    "repo": "hello-world",
+    "pull_number": 42
+}'
+```
+
 ### Utility Tools
 
 #### batch_tools
@@ -846,10 +983,10 @@ npx @modelcontextprotocol/inspector run
 
 ## Upcoming Features
 
--   GitHub tools:
+-   Additional GitHub tools:
     -   PR Description Generator
-    -   Code Review
     -   Actions Manager
+    -   Issue Management
 -   Pivotal Tracker tools:
     -   Story Generator
     -   Story Manager
