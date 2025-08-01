@@ -52,7 +52,7 @@ If you're using MseeP AI Helper app, you can search for "SkyDeckAI Code" and ins
 -   Screenshot and screen context tools
 -   Image handling tools
 
-## Available Tools (26)
+## Available Tools (29)
 
 | Category         | Tool Name                  | Description                                  |
 | ---------------- | -------------------------- | -------------------------------------------- |
@@ -82,6 +82,9 @@ If you're using MseeP AI Helper app, you can search for "SkyDeckAI Code" and ins
 | **System**       | `get_system_info`          | Get detailed system information              |
 | **Utility**      | `batch_tools`              | Run multiple tool operations together        |
 |                  | `think`                    | Document reasoning without making changes    |
+| **Todo**         | `todo_read`                | Read current workspace todo list             |
+|                  | `todo_write`               | Replace entire todo list with validation     |
+|                  | `todo_update`              | Update specific todo item by ID              |
 
 ## Detailed Tool Documentation
 
@@ -578,6 +581,137 @@ This tool executes arbitrary shell commands on your system. Always:
 3. Never execute untrusted scripts
 4. Be aware of potential system impacts
 5. Monitor execution output
+
+### Todo Tools
+
+The todo tools provide sequential task management capabilities for workspace-first development workflows. Tasks are executed in order without priority systems, ensuring structured progress through development phases.
+
+#### todo_read
+
+Read the current todo list for the workspace.
+
+```json
+{}
+```
+
+**Returns:**
+```json
+{
+  "todos": [
+    {
+      "id": "abc123",
+      "content": "Implement user authentication",
+      "status": "in_progress",
+      "metadata": {
+        "custom_key": "custom_value"
+      },
+      "created_at": "2023-10-01T10:00:00Z",
+      "updated_at": "2023-10-01T11:30:00Z"
+    }
+  ],
+  "count": 1,
+  "workspace": "/path/to/workspace"
+}
+```
+
+#### todo_write
+
+Replace the entire todo list for sequential execution workflow. Tasks are executed in array order, building upon previous work.
+
+```json
+{
+  "todos": [
+    {
+      "id": "task1",
+      "content": "Set up database schema",
+      "status": "pending"
+    },
+    {
+      "id": "task2", 
+      "content": "Create API endpoints",
+      "status": "pending",
+      "metadata": {
+        "custom_key": "custom_value"
+      }
+    }
+  ]
+}
+```
+
+**Sequential Workflow Rules:**
+- Each todo must have unique ID
+- Only one task can be "in_progress" at a time (sequential execution)
+- Tasks execute in array order - no priority system
+- Required fields: id, content, status
+- Status values: "pending", "in_progress", "completed"
+- Workspace-first: Todo management is mandatory for all workspace operations
+
+#### todo_update
+
+Update a specific todo item by ID for sequential workflow progression.
+
+```json
+{
+  "todo_id": "task1",
+  "updates": {
+    "status": "in_progress",
+    "metadata": {
+        "new_key": "new_value"
+    }
+  }
+}
+```
+
+**Returns:**
+```json
+{
+  "success": true,
+  "updated_todo": {
+    "id": "task1",
+    "content": "Set up database schema",
+    "status": "in_progress",
+    "updated_at": "2023-10-01T12:00:00Z",
+    "metadata": {
+        "new_key": "new_value"
+    }
+  },
+  "counts": {
+    "pending": 1,
+    "in_progress": 1,
+    "completed": 0,
+    "total": 2
+  },
+  "workspace": "/path/to/workspace"
+}
+```
+
+**CLI Usage:**
+
+```bash
+# Read current todos
+skydeckai-code-cli --tool todo_read
+
+# Create initial sequential todo list
+skydeckai-code-cli --tool todo_write --args '{
+  "todos": [
+    {
+      "id": "setup",
+      "content": "Initialize project structure",
+      "status": "pending"
+    }
+  ]
+}'
+
+# Update a specific todo
+skydeckai-code-cli --tool todo_update --args '{
+  "todo_id": "setup",
+  "updates": {
+    "status": "completed"
+  }
+}'
+```
+
+The todo system maintains separate sequential task lists for each workspace, enforcing mandatory usage for all workspace operations. Tasks execute in order, building upon previous work without priority-based scheduling.
 
 ## Configuration
 

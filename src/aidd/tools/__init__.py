@@ -47,6 +47,14 @@ from .screenshot_tool import (
     handle_capture_screenshot,
 )
 from .system_tools import get_system_info_tool, handle_get_system_info
+from .todo_tools import (
+    todo_read_tool,
+    todo_write_tool,
+    todo_update_tool,
+    handle_todo_read,
+    handle_todo_write,
+    handle_todo_update,
+)
 from .web_tools import web_fetch_tool, handle_web_fetch, web_search_tool, handle_web_search
 
 # Export all tools definitions
@@ -82,6 +90,10 @@ TOOL_DEFINITIONS = [
     web_search_tool(),
     # System tools
     get_system_info_tool(),
+    # Todo tools
+    todo_read_tool(),
+    todo_write_tool(),
+    todo_update_tool(),
 ]
 
 # Export all handlers
@@ -116,4 +128,8 @@ TOOL_HANDLERS = {
     # Web handlers
     "web_fetch": handle_web_fetch,
     "web_search": handle_web_search,
+    # Todo handlers
+    "todo_read": handle_todo_read,
+    "todo_write": handle_todo_write,
+    "todo_update": handle_todo_update,
 }
