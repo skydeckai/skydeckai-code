@@ -13,50 +13,36 @@ from .state import state
 def web_fetch_tool():
     return {
         "name": "web_fetch",
-        "description": "Fetches content from a URL. "
-                    "WHEN TO USE: When you need to retrieve data from web APIs, download documentation, "
-                    "check external resources, or gather information from websites. Useful for getting "
-                    "real-time data, documentation, or referencing external content. "
-                    "WHEN NOT TO USE: When you need to interact with complex websites requiring authentication "
-                    "or session management, when the data needs to be processed in a specific format not supported, "
-                    "or when you need to make authenticated API calls with OAuth. "
-                    "TIP: Use 'web_search' first to find relevant URLs, then use this tool to fetch detailed content. "
-                    "RETURNS: The content of the URL as text. For HTML pages, returns the raw HTML content. "
-                    "For JSON endpoints, returns the JSON content as a string. Successful response includes HTTP "
-                    "status code. Failed requests include error details. Maximum request size enforced for safety.",
+        "description": "Fetch URL content with HTML→markdown conversion. 10MB limit. "
+                    "USE: Get web data, API responses, documentation. "
+                    "NOT: Complex auth, session management, OAuth interactions. "
+                    "TIP: Use web_search first to find URLs. "
+                    "Auto-converts HTML to markdown",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "url": {
                     "type": "string",
-                    "description": "The URL to fetch content from. Must be a valid URL with supported protocol "
-                                   "(http or https). Examples: 'https://example.com', 'https://api.github.com/repos/user/repo'. "
-                                   "The URL must be publicly accessible."
+                    "description": "URL to fetch (http/https only). Examples: 'https://example.com', 'https://api.github.com/repos/user/repo'."
                 },
                 "headers": {
                     "type": "object",
-                    "description": "Optional HTTP headers to include in the request. Useful for API calls that "
-                                   "require specific headers like User-Agent or Accept. Example: {'User-Agent': 'SkyDeckAI', "
-                                   "'Accept': 'application/json'}.",
+                    "description": "Optional HTTP headers. Examples: {'User-Agent': 'SkyDeckAI', 'Accept': 'application/json'}.",
                     "default": {}
                 },
                 "timeout": {
                     "type": "integer",
-                    "description": "Request timeout in seconds. Maximum time to wait for the server to respond before "
-                                   "aborting the request. Defaults to 10 seconds.",
+                    "description": "Request timeout in seconds. Default: 10.",
                     "default": 10
                 },
                 "save_to_file": {
                     "type": "string",
-                    "description": "Optional path to save the response content to a file. If provided, the content "
-                                   "will be saved to this location. Must be within the allowed directory. Example: "
-                                   "'downloads/page.html', 'data/api_response.json'.",
+                    "description": "Optional save path. Examples: 'downloads/page.html', 'data/api_response.json'.",
                     "default": None
                 },
                 "convert_html_to_markdown": {
                     "type": "boolean",
-                    "description": "If set to true and the content is HTML, it will be converted to markdown format "
-                                   "for better readability. This is especially useful for web pages with a lot of content.",
+                    "description": "Convert HTML content to markdown for better readability. Default: true.",
                     "default": True
                 }
             },
@@ -192,36 +178,30 @@ async def handle_web_fetch(arguments: dict) -> List[TextContent]:
 def web_search_tool():
     return {
         "name": "web_search",
-        "description": "Performs a web search and returns the search results. "
-                    "WHEN TO USE: When you need to find information on the web, get up-to-date data, "
-                    "or research a topic. This provides more current information than your training data. "
-                    "WHEN NOT TO USE: For queries requiring complex authentication, accessing private data, "
-                    "or when you want to browse interactive websites. "
-                    "TIP: For best results, use this tool to find relevant URLs, then use 'web_fetch' to get the full content of specific pages. "
-                    "RETURNS: A list of search results including titles, URLs, and snippets for each result.",
+        "description": "Web search with Bing/DuckDuckGo. Returns titles, URLs, snippets. "
+                    "USE: Find current information, research topics. "
+                    "NOT: Private data, authenticated content, interactive sites. "
+                    "TIP: Use with web_fetch for detailed content",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "query": {
                     "type": "string",
-                    "description": "The search query to send to search engine. Be specific to get better results. "
-                                  "Example: 'latest python release features' or 'climate change statistics 2023'."
+                    "description": "Search query (be specific). Examples: 'latest python release features', 'climate change statistics 2023'."
                 },
                 "num_results": {
                     "type": "integer",
-                    "description": "Number of search results to return. Maximum is 20 to prevent abuse.",
+                    "description": "Number of results to return (max 20). Default: 10.",
                     "default": 10
                 },
                 "convert_html_to_markdown": {
                     "type": "boolean",
-                    "description": "If true, search result snippets will be converted from HTML to markdown "
-                                  "for better readability.",
+                    "description": "Convert search snippets from HTML to markdown. Default: true.",
                     "default": True
                 },
                 "search_engine": {
                     "type": "string",
-                    "description": "Specifies which search engine to use. Options: 'auto' (tries all in sequence), "
-                                  "'bing', or 'duckduckgo'. Some engines may block automated requests.",
+                    "description": "Search engine to use. Options: 'auto', 'bing', 'duckduckgo'. Default: 'auto'.",
                     "enum": ["auto", "bing", "duckduckgo"],
                     "default": "auto"
                 }

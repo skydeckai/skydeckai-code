@@ -23,26 +23,17 @@ def get_active_apps_tool():
     """Define the get_active_apps tool."""
     return {
         "name": "get_active_apps",
-        "description": "Get a list of currently active applications running on the user's system. "
-                       "WHEN TO USE: When you need to understand what software the user is currently working with, "
-                       "gain context about their active applications, provide application-specific assistance, or "
-                       "troubleshoot issues related to running programs. Especially useful for providing targeted "
-                       "help based on what the user is actively using. "
-                       "WHEN NOT TO USE: When you need information about specific windows rather than applications "
-                       "(use get_available_windows instead), when you need a screenshot of what's on screen "
-                       "(use capture_screenshot instead), or when application context isn't relevant to the task at hand. "
-                       "RETURNS: JSON object containing platform information, success status, count of applications, "
-                       "and an array of application objects. Each application object includes name, has_windows flag, "
-                       "and when details are requested, information about visible windows. Works on macOS, Windows, "
-                       "and Linux, with platform-specific implementation details.",
+        "description": "List currently active applications. "
+                       "USE: Understand user's active software, provide app-specific assistance. "
+                       "NOT: Window details (use get_available_windows), screenshots. "
+                       "RETURNS: JSON with platform, app count, array of apps with names/windows. "
+                       "Cross-platform: macOS, Windows, Linux",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "with_details": {
                     "type": "boolean",
-                    "description": "Whether to include additional details about each application. When true, returns extra "
-                                   "information like window_count, visible_windows with their names and dimensions. When false, "
-                                   "returns a simpler list with just application names and whether they have windows. Default is False."
+                    "description": "Include app details (window_count, visible_windows). Default: false."
                 }
             },
             "required": []

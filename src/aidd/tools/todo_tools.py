@@ -7,16 +7,11 @@ def todo_read_tool():
     """Define the todo_read tool."""
     return {
         "name": "todo_read",
-        "description": "Read the current task list from the workspace-specific todo storage. "
-        "MANDATORY: This tool MUST be called FIRST before ANY workspace operations including file reads, code analysis, development tasks, project creation, or directory manipulation. "
-        "WORKSPACE-FIRST RULE: Every LLM interaction with workspaces, directories, projects, or repositories requires todo management. "
-        "WHEN TO USE: Always when starting workspace operations - check task status, review pending/completed work, understand project context, pick up previous progress. "
-        "Essential for: Project initialization, code development, file operations, debugging, testing, deployment, refactoring. "
-        "WHEN NOT TO USE: Pure informational queries unrelated to workspace development. "
-        "RETURNS: Sequential task list with status and metadata. Tasks execute in order - no priority system. "
-        "Each workspace maintains isolated todo lists for project organization. "
-        "CRITICAL: Bypassing this tool for workspace operations violates mandatory protocol. "
-        "EXAMPLES: \n- Creating new projects: Read todos to check existing project structure tasks\n- Code development: Check current development phase and next sequential steps\n- File modifications: Understand task context before making changes\n- Project analysis: Review completed analysis and next investigation steps",
+        "description": "🚨 CRITICAL: MUST be called FIRST before ANY file/directory operations. WORKSPACE-BOUND REQUIREMENT. ⚠️ "
+        "ENFORCE: Every read_file, write_file, edit_file, directory operation REQUIRES checking todos first. "
+        "WORKSPACE ISOLATION: Each directory has isolated todo context - check current workspace todos before ANY action. "
+        "FATAL ERROR if skipped: File operations without todo context violate workflow protocol. "
+        "RETURNS: Active todo list for current directory/workspace. Essential for maintaining project state.",
         "inputSchema": {
             "type": "object",
             "properties": {},
@@ -29,29 +24,24 @@ def todo_write_tool():
     """Define the todo_write tool."""
     return {
         "name": "todo_write",
-        "description": "Update the entire task list (complete replacement) for the current workspace. "
-        "MANDATORY: This tool MUST be called when planning, adding, or reorganizing tasks during ANY workspace operations. "
-        "WORKSPACE-FIRST RULE: All workspace development requires structured task management through sequential execution. "
-        "WHEN TO USE: Task planning for new projects, adding development phases, reorganizing workflow, batch status updates. "
-        "Sequential execution model: Tasks are completed in order, building upon previous work. No priority system - order determines execution. "
-        "Essential for: Project planning, development workflows, feature implementation, debugging sequences, deployment phases. "
-        "WHEN NOT TO USE: Single task updates (use todo_update), pure reading (use todo_read). "
-        "RETURNS: Success status and task count. Enforces sequential execution (only one in-progress task). "
-        "CRITICAL: Sequential task management is mandatory for all workspace development activities. "
-        "EXAMPLES: \n- New project setup: Create sequential tasks for initialization, structure, dependencies\n- Feature development: Plan design, implementation, testing, documentation phases\n- Bug fixing: Create investigation, fix, test, validation sequence\n- Code refactoring: Plan analysis, changes, testing, cleanup steps",
+        "description": "🚨 WORKSPACE PROTOCOL: Create/replace todo list when no active todos exist for current directory. ⚠️ "
+        "TRIGGER: After todo_read returns empty list OR when starting new file/directory work. "
+        "MANDATORY WORKFLOW: 1) todo_read first 2) If empty→todo_write 3) Then proceed with file operations. "
+        "VIOLATION PREVENTION: Never perform write_file, edit_file, directory operations without active todo context. "
+        "EXECUTION RULE: Create essential todos only. One 'in_progress' maximum. Focus on key milestones not micro-tasks.",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "todos": {
                     "type": "array",
-                    "description": "Complete list of todo items to replace the current list for sequential execution. Each todo must contain id, content, and status fields. Tasks execute in array order.",
+                    "description": "Complete todo list for sequential execution. Tasks execute in array order.",
                     "items": {
                         "type": "object",
                         "properties": {
-                            "id": {"type": "string", "description": "Unique identifier for the task. Must be unique across all todos."},
-                            "content": {"type": "string", "description": "Task description or content. Cannot be empty."},
-                            "status": {"type": "string", "enum": ["pending", "in_progress", "completed"], "description": "Current status of the task. Only one task can be 'in_progress' at a time."},
-                            "metadata": {"type": "object", "description": "Optional additional data for the task.", "additionalProperties": True},
+                            "id": {"type": "string", "description": "Unique task identifier."},
+                            "content": {"type": "string", "description": "Task description (required)."},
+                            "status": {"type": "string", "enum": ["pending", "in_progress", "completed"], "description": "Task status (only one 'in_progress' allowed)."},
+                            "metadata": {"type": "object", "description": "Optional task metadata.", "additionalProperties": True},
                         },
                         "required": ["id", "content", "status"],
                         "additionalProperties": True,
@@ -67,28 +57,21 @@ def todo_update_tool():
     """Define the todo_update tool."""
     return {
         "name": "todo_update",
-        "description": "Update a specific todo item by ID for sequential workflow management. "
-        "MANDATORY: This tool MUST be called when progressing through tasks during workspace operations. "
-        "WORKSPACE-FIRST RULE: Task progress updates are required for all workspace development activities. "
-        "WHEN TO USE: Mark tasks in-progress when starting, completed when finished, update content for clarification. "
-        "Sequential workflow: Progress through tasks in order, maintaining single active task constraint. "
-        "Essential for: Task status transitions, progress tracking, workflow advancement, content updates. "
-        "WHEN NOT TO USE: Multiple task updates (use todo_write), adding new tasks (use todo_write). "
-        "RETURNS: Updated todo with status counts showing workflow progress. "
-        "Enforces sequential execution - only one task can be in-progress at any time. "
-        "CRITICAL: Sequential progress tracking is mandatory for workspace development workflows. "
-        "EXAMPLES: \n- Starting work: Update task from 'pending' to 'in_progress'\n- Completing work: Update task from 'in_progress' to 'completed'\n- Task refinement: Update content for better clarity\n- Workflow progression: Move to next sequential task",
+        "description": "🚨 WORKFLOW ENFORCEMENT: Update todo status during file/directory operations. REQUIRED after each task. ⚠️ "
+        "PROTOCOL: Mark 'in_progress' when starting task, 'completed' when finished. Update after EVERY file operation. "
+        "CRITICAL SYNC: Todo status must reflect actual work progress. Failure to update breaks workspace integrity. "
+        "SEQUENTIAL RULE: Only one task 'in_progress' at a time. Complete current before starting next.",
         "inputSchema": {
             "type": "object",
             "properties": {
-                "todo_id": {"type": "string", "description": "The unique ID of the todo to update."},
+                "todo_id": {"type": "string", "description": "Todo ID to update."},
                 "updates": {
                     "type": "object",
-                    "description": "Fields to update in the todo for sequential workflow. Can include content, status, or metadata.",
+                    "description": "Fields to update (content, status, metadata).",
                     "properties": {
-                        "content": {"type": "string", "description": "New task description or content."},
-                        "status": {"type": "string", "enum": ["pending", "in_progress", "completed"], "description": "New status of the task."},
-                        "metadata": {"type": "object", "description": "Additional data for the task.", "additionalProperties": True},
+                        "content": {"type": "string", "description": "New task description."},
+                        "status": {"type": "string", "enum": ["pending", "in_progress", "completed"], "description": "New task status."},
+                        "metadata": {"type": "object", "description": "Additional task data.", "additionalProperties": True},
                     },
                     "additionalProperties": True,
                 },

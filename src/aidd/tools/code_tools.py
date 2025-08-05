@@ -14,16 +14,10 @@ from .state import state
 def search_code_tool():
     return {
         "name": "search_code",
-        "description": "Fast content search tool using regular expressions. "
-                    "WHEN TO USE: When you need to search for specific patterns within file contents across a codebase. "
-                    "Useful for finding function definitions, variable usages, import statements, or any text pattern "
-                    "in source code files. "
-                    "WHEN NOT TO USE: When you need to find files by name (use search_files instead), when you need "
-                    "semantic code understanding (use codebase_mapper instead), or when analyzing individual file "
-                    "structure. "
-                    "RETURNS: Lines of code matching the specified patterns, grouped by file with line numbers. "
-                    "Results are sorted by file modification time with newest files first. Respects file filtering "
-                    "and ignores binary files. Search is restricted to the allowed directory.",
+        "description": "Regex search in file contents. Uses ripgrep when available. "
+                    "USE: Find function definitions, variable usage, code patterns. "
+                    "NOT: File names (use search_files), semantic analysis. "
+                    "RETURNS: Matching lines with file paths, line numbers, sorted by modification time",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -32,46 +26,36 @@ def search_code_tool():
                     "items": {
                         "type": "string"
                     },
-                    "description": "List of regular expression patterns to search for in file contents. Supports full regex syntax. "
-                                   "Examples: ['function\\s+\\w+', 'class\\s+\\w+'] to find both function and class declarations."
+                    "description": "Regex patterns to search. Examples: ['function\\s+\\w+', 'class\\s+\\w+']."
                 },
                 "include": {
                     "type": "string",
-                    "description": "File pattern to include in the search. Supports glob patterns including wildcards and braces. "
-                                   "Examples: '*.js' for all JavaScript files, '*.{ts,tsx}' for TypeScript files, "
-                                   "'src/**/*.py' for Python files in the src directory and subdirectories.",
+                    "description": "File inclusion pattern (glob). Examples: '*.js', '*.{ts,tsx}', 'src/**/*.py'.",
                     "default": "*"
                 },
                 "exclude": {
                     "type": "string",
-                    "description": "File pattern to exclude from the search. Supports glob patterns including wildcards and braces. "
-                                   "Examples: 'node_modules/**' to exclude node_modules directory, '*.min.js' to exclude minified JS.",
+                    "description": "File exclusion pattern (glob). Examples: 'node_modules/**', '*.min.js'.",
                     "default": ""
                 },
                 "max_results": {
                     "type": "integer",
-                    "description": "Maximum number of matching results to return per pattern. Use to limit output size for common patterns. "
-                                   "Default is 100, which is sufficient for most searches while preventing excessive output.",
+                    "description": "Max results per pattern. Default: 100.",
                     "default": 100
                 },
                 "case_sensitive": {
                     "type": "boolean",
-                    "description": "Whether to perform a case-sensitive search. When true, 'Error' will not match 'error'. "
-                                   "Default is false, which makes searches case-insensitive.",
+                    "description": "Case-sensitive search. Default: false.",
                     "default": False
                 },
                 "path": {
                     "type": "string",
-                    "description": "Base directory to search from. This is the starting point for the search. "
-                                   "Examples: '.' for current directory, 'src' to search only within src directory. "
-                                   "Default is the root of the allowed directory.",
+                    "description": "Base directory to search. Examples: '.', 'src'. Default: '.'.",
                     "default": "."
                 },
                 "include_hidden": {
                     "type": "boolean",
-                    "description": "Whether to include hidden files. When true, also include the hidden files like"
-                                   ".env, .config on Unix/Posix/Linux, or files with hidden attribute on Windows"
-                                   "Default is false, which exclude the hidden files from search",
+                    "description": "Include hidden files (.env, .config, etc). Default: false.",
                     "default": False,
                 },
             },

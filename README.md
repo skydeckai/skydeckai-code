@@ -59,19 +59,19 @@ If you're using MseeP AI Helper app, you can search for "SkyDeckAI Code" and ins
 | **File System**  | `get_allowed_directory`    | Get the current working directory path       |
 |                  | `update_allowed_directory` | Change the working directory                 |
 |                  | `create_directory`         | Create a new directory or nested directories |
-|                  | `write_file`               | Create or overwrite a file with new content  |
-|                  | `edit_file`                | Make line-based edits to a text file         |
-|                  | `read_file`                | Read the contents of one or more files       |
+|                  | `write_file`               | Create or overwrite files with auto-directory creation |
+|                  | `edit_file`                | Make targeted text replacements with diff output |
+|                  | `read_file`                | Read file contents with optional line range support |
 |                  | `list_directory`           | Get listing of files and directories         |
-|                  | `move_file`                | Move or rename a file or directory           |
-|                  | `copy_file`                | Copy a file or directory to a new location   |
-|                  | `search_files`             | Search for files matching a name pattern     |
-|                  | `delete_file`              | Delete a file or empty directory             |
-|                  | `get_file_info`            | Get detailed file metadata                   |
+|                  | `move_file`                | Move or rename files/directories with auto-directory creation |
+|                  | `copy_file`                | Copy files or directories with recursive support |
+|                  | `search_files`             | Find files by name pattern (recursive, case-insensitive) |
+|                  | `delete_file`              | Delete files or empty directories safely     |
+|                  | `get_file_info`            | Get file metadata without reading content    |
 |                  | `directory_tree`           | Get a recursive tree view of directories     |
 |                  | `read_image_file`          | Read an image file as base64 data            |
 | **Code Tools**   | `codebase_mapper`          | Analyze code structure across files          |
-|                  | `search_code`              | Find text patterns in code files             |
+|                  | `search_code`              | Search file contents using regex patterns |
 |                  | `execute_code`             | Run code in various languages                |
 |                  | `execute_shell_script`     | Run shell/bash scripts                       |
 | **Web Tools**    | `web_fetch`                | Get content from a URL                       |
@@ -82,9 +82,9 @@ If you're using MseeP AI Helper app, you can search for "SkyDeckAI Code" and ins
 | **System**       | `get_system_info`          | Get detailed system information              |
 | **Utility**      | `batch_tools`              | Run multiple tool operations together        |
 |                  | `think`                    | Document reasoning without making changes    |
-| **Todo**         | `todo_read`                | Read current workspace todo list             |
-|                  | `todo_write`               | Replace entire todo list with validation     |
-|                  | `todo_update`              | Update specific todo item by ID              |
+| **Todo**         | `todo_read`                | Read current workspace todo list |
+|                  | `todo_write`               | Create/replace todo list for workspace workflow |
+|                  | `todo_update`              | Update todo status during task execution     |
 
 ## Detailed Tool Documentation
 
@@ -103,7 +103,7 @@ If you're using MseeP AI Helper app, you can search for "SkyDeckAI Code" and ins
 
 #### edit_file
 
-Pattern-based file editing with preview support:
+Targeted text replacement in files with efficient batch editing:
 
 ```json
 {
@@ -114,14 +114,14 @@ Pattern-based file editing with preview support:
             "newText": "def new_function():"
         }
     ],
-    "dryRun": false,
     "options": {
-        "partialMatch": true
+        "partialMatch": true,
+        "confidenceThreshold": 0.8
     }
 }
 ```
 
-Returns: Diff of changes or preview in dry run mode.
+Returns: Git-style diff with success/failure details for each edit.
 
 ### Directory Operations
 
@@ -133,7 +133,7 @@ Returns: Diff of changes or preview in dry run mode.
 | create_directory         | path: string                                             | Success confirmation           |
 | search_files             | pattern: string, path?: string, include_hidden?: boolean | Matching files list            |
 
-The `search_files` tool searches for files by name pattern, while the `search_code` tool searches within file contents using regex. Use `search_files` when looking for files with specific names or extensions, and `search_code` when searching for specific text patterns inside files.
+The `search_files` tool finds files by name pattern (recursive, case-insensitive), while the `search_code` tool searches file contents using regex patterns. Use `search_files` for locating files by extension or name, and `search_code` for finding specific code patterns, function definitions, or variable usage within files.
 
 #### directory_tree
 
@@ -184,7 +184,7 @@ Supported Languages:
 
 #### search_code
 
-Fast content search tool using regular expressions:
+Regex-based content search:
 
 ```json
 {
@@ -193,24 +193,26 @@ Fast content search tool using regular expressions:
     "exclude": "node_modules/**",
     "max_results": 50,
     "case_sensitive": false,
-    "path": "src"
+    "path": "src",
+    "include_hidden": false
 }
 ```
 
 **Parameters:**
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| patterns | array of strings | Yes | List of regular expression patterns to search for in file contents |
-| include | string | No | File pattern to include (glob syntax, default: "\*") |
-| exclude | string | No | File pattern to exclude (glob syntax, default: "") |
+| patterns | array of strings | Yes | Regular expression patterns to search for in file contents |
+| include | string | No | File inclusion pattern (glob syntax, default: "*") |
+| exclude | string | No | File exclusion pattern (glob syntax, default: "") |
 | max_results | integer | No | Maximum results to return per pattern (default: 100) |
-| case_sensitive | boolean | No | Whether search is case-sensitive (default: false) |
+| case_sensitive | boolean | No | Case-sensitive search (default: false) |
 | path | string | No | Base directory to search from (default: ".") |
+| include_hidden | boolean | No | Include hidden files (.env, .config, etc.) (default: false) |
 
 **Returns:**
-Matching lines grouped by file with line numbers, sorted by file modification time with newest files first.
+Matching lines with file paths and line numbers, sorted by file modification time (newest first).
 
-This tool uses ripgrep when available for optimal performance, with a Python fallback implementation. It's ideal for finding specific code patterns like function declarations, imports, variable usages, or error handling.
+This tool uses ripgrep when available for superior performance, with a Python fallback. Ideal for finding function definitions, variable usage, imports, or any code patterns across your codebase.
 
 ### System Information
 
@@ -584,11 +586,11 @@ This tool executes arbitrary shell commands on your system. Always:
 
 ### Todo Tools
 
-The todo tools provide sequential task management capabilities for workspace-first development workflows. Tasks are executed in order without priority systems, ensuring structured progress through development phases.
+The todo tools provide mandatory workspace-bound task management for structured development workflows. Each workspace maintains isolated todo context, and todo checking is required before file operations.
 
 #### todo_read
 
-Read the current todo list for the workspace.
+**CRITICAL**: Must be called first before any file/directory operations. Returns the active todo list for the current workspace.
 
 ```json
 {}
@@ -616,7 +618,7 @@ Read the current todo list for the workspace.
 
 #### todo_write
 
-Replace the entire todo list for sequential execution workflow. Tasks are executed in array order, building upon previous work.
+Create or replace the complete todo list when no active todos exist. Triggered after `todo_read` returns empty or when starting new work.
 
 ```json
 {
@@ -638,17 +640,16 @@ Replace the entire todo list for sequential execution workflow. Tasks are execut
 }
 ```
 
-**Sequential Workflow Rules:**
-- Each todo must have unique ID
-- Only one task can be "in_progress" at a time (sequential execution)
-- Tasks execute in array order - no priority system
-- Required fields: id, content, status
-- Status values: "pending", "in_progress", "completed"
-- Workspace-first: Todo management is mandatory for all workspace operations
+**Workflow Protocol:**
+1. Call `todo_read` first
+2. If empty → call `todo_write` 
+3. Then proceed with file operations
+4. Only one task "in_progress" at a time
+5. Tasks execute sequentially in array order
 
 #### todo_update
 
-Update a specific todo item by ID for sequential workflow progression.
+Update todo status during file operations. Required after each task completion to maintain workspace integrity.
 
 ```json
 {
@@ -685,7 +686,7 @@ Update a specific todo item by ID for sequential workflow progression.
 }
 ```
 
-The todo system maintains separate sequential task lists for each workspace, enforcing mandatory usage for all workspace operations. Tasks execute in order, building upon previous work without priority-based scheduling.
+**Critical**: Todo status must reflect actual work progress. Update after every file operation to maintain workspace protocol compliance.
 
 ## Configuration
 

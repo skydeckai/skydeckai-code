@@ -9,34 +9,20 @@ from .state import state
 def batch_tools_tool():
     return {
         "name": "batch_tools",
-        "description": "Execute multiple tool invocations in parallel or serially. "
-                    "WHEN TO USE: When you need to run multiple operations efficiently in a single request, "
-                    "combine related operations, or gather results from different tools. Useful for bulk operations, "
-                    "coordinated tasks, or performing multiple queries simultaneously. "
-                    "WHEN NOT TO USE: When operations need to be performed strictly in sequence where each step depends "
-                    "on the previous step's result, when performing simple operations that don't benefit from batching, "
-                    "or when you need fine-grained error handling. "
-                    "RETURNS: Results from all tool invocations grouped together. Each result includes the tool name "
-                    "and its output. If any individual tool fails, its error is included but other tools continue execution. "
-                    "Parallelizable tools are executed concurrently for performance. Each tool's output is presented in "
-                    "a structured format along with the description you provided. "
-                    "IMPORTANT NOTE: All tools in the batch execute in the same working directory context. If a tool creates a directory "
-                    "and a subsequent tool needs to work inside that directory, you must either use paths relative to the current working directory "
-                    "or include an explicit tool invocation to change directories (e.g., update_allowed_directory).",
+        "description": "Execute multiple tools in parallel/sequential. "
+                    "USE: Bulk operations, coordinated tasks, multiple queries. "
+                    "NOT: Sequential dependencies between steps, fine-grained error handling. "
+                    "All tools execute in same working directory context",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "description": {
                     "type": "string",
-                    "description": "A short (3-5 word) description of the batch operation. This helps identify the purpose "
-                                   "of the batch and provides context for the results. Examples: 'Setup new project', "
-                                   "'Analyze codebase', 'Gather system info'."
+                    "description": "Short batch operation description (3-5 words). Examples: 'Setup new project', 'Analyze codebase'."
                 },
                 "sequential": {
                     "type": "boolean",
-                    "description": "Whether to run tools in sequential order (true) or parallel when possible (false). "
-                                  "Use sequential mode when tools need to build on the results of previous tools. "
-                                  "Default is false (parallel execution).",
+                    "description": "Sequential (true) or parallel (false) execution. Default: false.",
                     "default": False
                 },
                 "invocations": {
@@ -46,18 +32,16 @@ def batch_tools_tool():
                         "properties": {
                             "tool": {
                                 "type": "string",
-                                "description": "Name of the tool to invoke. Must be a valid tool name registered in the system."
+                                "description": "Tool name to invoke."
                             },
                             "arguments": {
                                 "type": "object",
-                                "description": "Arguments to pass to the tool. These should match the required arguments "
-                                               "for the specified tool."
+                                "description": "Tool arguments."
                             }
                         },
                         "required": ["tool", "arguments"]
                     },
-                    "description": "List of tool invocations to execute. Each invocation specifies a tool name and its arguments. "
-                                  "These will be executed in parallel when possible, or serially when necessary."
+                    "description": "Tool invocations to execute (parallel or sequential)."
                 }
             },
             "required": ["description", "invocations"]
@@ -190,23 +174,16 @@ async def _execute_tool_with_error_handling(handler, arguments, tool_name, index
 def think_tool():
     return {
         "name": "think",
-        "description": "Use the tool to methodically think through a complex problem step-by-step. "
-                    "WHEN TO USE: When tackling complex reasoning tasks that benefit from breaking down problems, exploring multiple perspectives, "
-                    "or reasoning through chains of consequences. Ideal for planning system architecture, debugging complex issues, "
-                    "anticipating edge cases, weighing tradeoffs, or making implementation decisions. "
-                    "WHEN NOT TO USE: For simple explanations, direct code writing, retrieving information, or when immediate action is needed. "
-                    "RETURNS: Your structured thinking process formatted as markdown. This tool helps you methodically document your reasoning "
-                    "without making repository changes. Structuring your thoughts with this tool can lead to more reliable reasoning "
-                    "and better decision-making, especially for complex problems where it's easy to overlook important considerations.",
+        "description": "Structured reasoning for complex problems. Documents thought process without file changes. "
+                    "USE: Planning architecture, debugging complex issues, weighing tradeoffs. "
+                    "NOT: Simple explanations, direct coding, information retrieval. "
+                    "RETURNS: Markdown-formatted thinking process",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "thought": {
                     "type": "string",
-                    "description": "Your step-by-step thinking process, including: breaking down problems, exploring alternatives, "
-                                   "considering pros/cons, examining assumptions, listing requirements, or working through edge cases. "
-                                   "Structure your thinking using markdown elements like bullet points, numbered lists, headings, or code blocks. "
-                                   "The more systematic your thinking, the better the outcome."
+                    "description": "Step-by-step thinking process using markdown (bullet points, lists, headings, code blocks)."
                 }
             },
             "required": ["thought"]

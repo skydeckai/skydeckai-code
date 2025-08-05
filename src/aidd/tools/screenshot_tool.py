@@ -107,53 +107,37 @@ def capture_screenshot_tool():
     """Define the capture_screenshot tool."""
     return {
         "name": "capture_screenshot",
-        "description": "Capture a screenshot of the current screen and save it to a file. "
-                      "This tool allows capturing the entire screen, the active window, or a specific named window. "
-                      "The screenshot will be saved to the specified output path or to a default location if not provided. "
-                      "WHEN TO USE: When you need to visually document what's on screen, capture a specific application "
-                      "window, create visual references for troubleshooting, or gather visual information about the user's "
-                      "environment. Useful for documenting issues, creating tutorials, or assisting with visual tasks. "
-                      "WHEN NOT TO USE: When you need information about windows without capturing them (use get_available_windows "
-                      "instead). "
-                      "RETURNS: A JSON object containing success status, file path where the screenshot was saved, and a "
-                      "message. On failure, includes a detailed error message. If debug mode is enabled, also includes debug "
-                      "information about the attempted capture. Windows can be captured in the background without bringing "
-                      "them to the front. Works on macOS, Windows, and Linux with platform-specific implementations.",
+        "description": "Screenshot full screen, active window, or named window. "
+                      "USE: Visual documentation, troubleshooting, UI reference. "
+                      "NOT: Window info without capture (use get_available_windows). "
+                      "Captures windows in background. Requires permissions on macOS. "
+                      "RETURNS: JSON with success, path, message",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "output_path": {
                     "type": "string",
-                    "description": "Optional path where the screenshot should be saved. If not provided, a default path will be used."
-                                   "Examples: 'screenshots/main_window.png', 'docs/current_state.png'. Both absolute "
-                                   "and relative paths are supported, but must be within the allowed workspace."
+                    "description": "Optional save path. Examples: 'screenshots/main_window.png', 'docs/current_state.png'."
                 },
                 "capture_mode": {
                     "type": "object",
-                    "description": "Specifies what to capture in the screenshot.",
+                    "description": "What to capture.",
                     "properties": {
                         "type": {
                             "type": "string",
-                            "description": "The type of screenshot to capture. Use 'full' for the entire screen, 'active_window' "
-                                           "for the currently active window (foreground window), or 'named_window' for a specific "
-                                           "window by name or application name.",
+                            "description": "Screenshot type: 'full' (entire screen), 'active_window' (foreground), 'named_window' (specific window).",
                             "enum": ["full", "active_window", "named_window"]
                         },
                         "window_name": {
                             "type": "string",
-                            "description": "Name of the specific application or window to capture. Required when type is 'named_window'. "
-                                           "This can be a partial window title or application name, and the search is case-insensitive. "
-                                           "Examples: 'Chrome', 'Visual Studio Code', 'Terminal'. Windows can be captured in the "
-                                           "background without bringing them to the front."
+                            "description": "Application/window name (required for 'named_window'). Case-insensitive. Examples: 'Chrome', 'Terminal'."
                         }
                     },
                     "required": ["type"]
                 },
                 "debug": {
                     "type": "boolean",
-                    "description": "Whether to include detailed debug information in the response when the operation fails. When "
-                                   "set to true, the response will include additional information about available windows, match "
-                                   "attempts, and system-specific details that can help diagnose capture issues. Default is False.",
+                    "description": "Include debug info on failure (shows available windows, match attempts). Default: false.",
                 }
             },
             "required": ["capture_mode"]

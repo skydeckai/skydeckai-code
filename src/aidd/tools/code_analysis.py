@@ -57,24 +57,17 @@ except Exception as e:
 def codebase_mapper_tool():
     return {
         "name": "codebase_mapper",
-        "description": "Build a structural map of source code files in a directory. "
-                    "This tool analyzes code structure to identify classes, functions, and methods. "
-                    "WHEN TO USE: When you need to understand the structure of a codebase, discover classes and "
-                    "functions across multiple files, identify inheritance relationships, or get a high-level overview of code organization without "
-                    "reading every file individually. "
-                    "WHEN NOT TO USE: When you need to search for specific text patterns (use search_files instead), when you "
-                    "need to analyze a single known file (use read_file instead), or when you're working with non-code files. "
-                    "SUPPORTED LANGUAGES: Python (.py), JavaScript (.js/.jsx), TypeScript (.ts/.tsx), Java (.java), C++ (.cpp), Ruby (.rb), Go (.go), Rust (.rs), PHP (.php), "
-                    "C# (.cs), Kotlin (.kt). "
-                    "RETURNS: A text-based tree structure showing classes and functions in the codebase, along with statistics "
-                    "about found elements. Only analyzes files within the allowed directory. "
-                    "Example: Enter '.' to analyze all source files in current directory, or 'src' to analyze all files in the src directory.",
+        "description": "Generate structural map of code: classes, functions, methods using tree-sitter. "
+                    "USE: Understand codebase architecture, discover code structure. "
+                    "NOT: Text search (use search_code), single file analysis. "
+                    "SUPPORTS: Python, JS/TS, Java, C++, Ruby, Go, Rust, PHP, C#, Kotlin. "
+                    "RETURNS: Text tree of classes/functions with statistics",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "path": {
                     "type": "string",
-                    "description": "Root directory to analyze. Examples: '.' for current directory, 'src' for src directory, 'lib/components' for a specific subdirectory. The path must point to a directory within the allowed workspace."
+                    "description": "Root directory to analyze. Examples: '.', 'src', 'lib/components'."
                 }
             },
             "required": ["path"]

@@ -28,20 +28,10 @@ def execute_code_tool() -> Dict[str, Any]:
     return {
         "name": "execute_code",
         "description": (
-            "Execute arbitrary code in various programming languages on the user's local machine within the current working directory. "
-            "WHEN TO USE: When you need to run small code snippets to test functionality, compute values, process data, or "
-            "demonstrate how code works. Useful for quick prototyping, data transformations, or explaining programming concepts with running "
-            "examples. "
-            "WHEN NOT TO USE: When you need to modify files (use write_file or edit_file instead), when running potentially harmful "
-            "operations, or when you need to install external dependencies. "
-            "RETURNS: Text output including stdout, stderr, and exit code of the "
-            "execution. The output sections are clearly labeled with '=== stdout ===' and '=== stderr ==='. "
-            "Supported languages: " + ", ".join(LANGUAGE_CONFIGS.keys()) + ". "
-            "Always review the code carefully before execution to prevent unintended consequences. "
-            "Examples: "
-            "- Python: code='print(sum(range(10)))'. "
-            "- JavaScript: code='console.log(Array.from({length: 5}, (_, i) => i*2))'. "
-            "- Ruby: code='puts (1..5).reduce(:+)'. "
+            "Execute code snippets in sandbox. Supports: python, javascript, ruby, php, go, rust. "
+            "USE: Test functions, compute values, prototype. "
+            "NOT: File modifications, system operations, dependencies. "
+            "Auto-wraps Go/Rust main functions. Timeout: 30s max"
         ),
         "inputSchema": {
             "type": "object",
@@ -49,21 +39,15 @@ def execute_code_tool() -> Dict[str, Any]:
                 "language": {
                     "type": "string",
                     "enum": list(LANGUAGE_CONFIGS.keys()),
-                    "description": "Programming language to use. Must be one of the supported languages: "
-                    + ", ".join(LANGUAGE_CONFIGS.keys())
-                    + ". "
-                    + "Each language requires the appropriate runtime to be installed on the user's machine. The code will be executed using: python3 for "
-                    + "Python, node for JavaScript, ruby for Ruby, php for PHP, go run for Go, and rustc for Rust.",
+                    "description": "Programming language. Requires runtime: python3, node, ruby, php, go, rustc.",
                 },
                 "code": {
                     "type": "string",
-                    "description": "Code to execute on the user's local machine in the current working directory. The code will be saved to a "
-                    + "temporary file and executed within the allowed workspace. For Go and Rust, main function wrappers will be added automatically if "
-                    + "not present. For PHP, <?php will be prepended if not present.",
+                    "description": "Code to execute. Auto-wraps Go/Rust main functions, adds PHP tags.",
                 },
                 "timeout": {
                     "type": "integer",
-                    "description": "Maximum execution time in seconds. The execution will be terminated if it exceeds this time limit, returning a " + "timeout message. Must be between 1 and 30 seconds.",
+                    "description": "Max execution time (1-30 seconds). Default: 5.",
                     "default": 5,
                     "minimum": 1,
                     "maximum": 30,
@@ -78,36 +62,21 @@ def execute_shell_script_tool() -> Dict[str, Any]:
     return {
         "name": "execute_shell_script",
         "description": (
-            "Execute a shell script (bash/sh) on the user's local machine within the current working directory. "
-            "WHEN TO USE: When you need to automate system tasks, run shell commands, interact with the operating system, or perform operations "
-            "that are best expressed as shell commands. Useful for file system operations, system configuration, or running system utilities. "
-            "Also ideal when you need to run code linters to check for style issues or potential bugs in the codebase, "
-            "or when you need to perform version control operations such as initializing git repositories, checking status, "
-            "committing changes, cloning repositories, and other git commands without dedicated tools. "
-            "WHEN NOT TO USE: When you need more structured programming (use execute_code instead), when you need to execute potentially "
-            "dangerous system operations, or when you want to run commands outside the allowed directory. "
-            "RETURNS: Text output including stdout, stderr, and exit code of the execution. The output sections are clearly labeled with "
-            "'=== stdout ===' and '=== stderr ==='. "
-            "This tool can execute shell commands and scripts for system automation and management tasks. "
-            "It is designed to perform tasks on the user's local environment, such as opening applications, installing packages and more. "
-            "Always review the script carefully before execution to prevent unintended consequences. "
-            "Examples: "
-            "- script='echo \"Current directory:\" && pwd'. "
-            "- script='for i in {1..5}; do echo $i; done'. "
-            "- script='eslint src/ --format stylish' (for linting). "
-            "- script='git init && git add . && git commit -m \"Initial commit\"' (for git operations)."
+            "Run bash/sh scripts for system tasks, git operations, linters. "
+            "USE: System automation, file operations, version control, code linting. "
+            "NOT: Structured programming (use execute_code), dangerous operations. "
+            "Timeout: 10 minutes maximum"
         ),
         "inputSchema": {
             "type": "object",
             "properties": {
                 "script": {
                     "type": "string",
-                    "description": "Shell script to execute on the user's local machine. Can include any valid shell commands or scripts that would "
-                    "run in a standard shell environment. The script is executed using /bin/sh for maximum compatibility across systems.",
+                    "description": "Shell script to execute (uses /bin/sh for compatibility).",
                 },
                 "timeout": {
                     "type": "integer",
-                    "description": "Maximum execution time in seconds. The execution will be terminated if it exceeds this time limit. Default is 300 seconds (5 minutes), with a maximum allowed value of 600 seconds (10 minutes).",
+                    "description": "Max execution time (up to 600 seconds). Default: 300.",
                     "default": 300,
                     "maximum": 600,
                 },

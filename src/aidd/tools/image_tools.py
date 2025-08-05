@@ -17,32 +17,20 @@ MAX_WIDTH = 800
 def read_image_file_tool():
     return {
         "name": "read_image_file",
-        "description": "Read an image file from the file system and return its contents as a base64-encoded string. "
-                    "WHEN TO USE: When you need to view or process image files, include images in responses, analyze "
-                    "image content, or convert images to a format that can be transmitted as text. Useful for examining "
-                    "screenshots, diagrams, photos, or any visual content stored in the file system. "
-                    "WHEN NOT TO USE: When you only need information about the image file without its contents "
-                    "(use get_file_info instead), when working with extremely large images (over 100MB), or when you "
-                    "need to read text files (use read_file instead). "
-                    "RETURNS: A base64-encoded data URI string prefixed with the appropriate MIME type "
-                    "(e.g., 'data:image/png;base64,...'). Images that are very small or very large will be automatically "
-                    "resized to between 20-800 pixels wide while maintaining aspect ratio. This tool supports common image "
-                    "formats like PNG, JPEG, GIF, and WebP. Only works within the allowed directory.",
+        "description": "Read image as base64 data URI. Auto-resizes to 20-800px width. 100MB limit. "
+                    "USE: View/process images, include in responses, analyze visual content. "
+                    "NOT: Image metadata only, text files, very large images. "
+                    "RETURNS: data:image/format;base64,... string. Supports PNG/JPEG/GIF/WebP",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "path": {
                     "type": "string",
-                    "description": "Path to the image file to read. This must be a valid image file in a supported format "
-                                   "(PNG, JPEG, GIF, WebP). Examples: 'screenshots/screen.png', 'images/logo.jpg', "
-                                   "'diagrams/flowchart.gif'. Both absolute and relative paths are supported, but must be "
-                                   "within the allowed workspace."
+                    "description": "Image file path (PNG/JPEG/GIF/WebP). Examples: 'screenshots/screen.png', 'images/logo.jpg'."
                 },
                 "max_size": {
                     "type": "integer",
-                    "description": "Maximum file size in bytes to allow. Files larger than this size will be rejected to "
-                                   "prevent memory issues. Default is 100MB (104,857,600 bytes). For most use cases, the "
-                                   "default value is sufficient, but you can lower this when working with limited memory.",
+                    "description": "Max file size in bytes. Default: 100MB.",
                     "optional": True
                 }
             },

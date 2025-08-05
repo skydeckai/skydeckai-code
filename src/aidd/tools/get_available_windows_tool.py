@@ -30,18 +30,11 @@ def get_available_windows_tool():
     """Define the get_available_windows tool."""
     return {
         "name": "get_available_windows",
-        "description": "Get detailed information about all available windows currently displayed on the user's screen. "
-                       "WHEN TO USE: When you need to know exactly what windows are visible to the user, find a specific "
-                       "window by title, provide guidance related to something the user is viewing, or need window-level "
-                       "context that's more detailed than application-level information. Useful for referencing specific "
-                       "content the user can see on their screen. "
-                       "WHEN NOT TO USE: When application-level information is sufficient (use get_active_apps instead), "
-                       "when you need to capture what's on screen (use capture_screenshot instead), or when window "
-                       "context isn't relevant to the task at hand. "
-                       "RETURNS: JSON object containing platform information, success status, count of windows, and an "
-                       "array of window objects. Each window object includes title, application owner, visibility status, "
-                       "and platform-specific details like window IDs. Works on macOS, Windows, and Linux, with "
-                       "platform-specific implementation details.",
+        "description": "List all visible windows with details. "
+                       "USE: Find specific windows by title, get window-level context. "
+                       "NOT: App-level info (use get_active_apps), screen capture. "
+                       "RETURNS: JSON with window count, array of windows with title/app/visibility. "
+                       "Cross-platform: macOS, Windows, Linux",
         "inputSchema": {
             "type": "object",
             "properties": {},
