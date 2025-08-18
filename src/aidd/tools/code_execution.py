@@ -1,4 +1,6 @@
 import os
+import platform
+import shutil
 import stat
 import subprocess
 from typing import Any, Dict, List
@@ -78,7 +80,8 @@ def execute_shell_script_tool() -> Dict[str, Any]:
     return {
         "name": "execute_shell_script",
         "description": (
-            "Execute a shell script (bash/sh) on the user's local machine within the current working directory. "
+            "Execute a shell script on the user's local machine within the current working directory. "
+            "Cross-platform support: automatically uses bash/sh on Unix-like systems (Linux/macOS) and PowerShell/cmd on Windows. "
             "WHEN TO USE: When you need to automate system tasks, run shell commands, interact with the operating system, or perform operations "
             "that are best expressed as shell commands. Useful for file system operations, system configuration, or running system utilities. "
             "Also ideal when you need to run code linters to check for style issues or potential bugs in the codebase, "
@@ -92,10 +95,10 @@ def execute_shell_script_tool() -> Dict[str, Any]:
             "It is designed to perform tasks on the user's local environment, such as opening applications, installing packages and more. "
             "Always review the script carefully before execution to prevent unintended consequences. "
             "Examples: "
-            "- script='echo \"Current directory:\" && pwd'. "
-            "- script='for i in {1..5}; do echo $i; done'. "
-            "- script='eslint src/ --format stylish' (for linting). "
-            "- script='git init && git add . && git commit -m \"Initial commit\"' (for git operations)."
+            "- script='echo \"Current directory:\" && pwd' (Unix) or 'echo \"Current directory:\" && pwd' (Windows PowerShell). "
+            "- script='for i in {1..5}; do echo $i; done' (Unix) or 'for ($i=1; $i -le 5; $i++) { Write-Host $i }' (Windows PowerShell). "
+            "- script='eslint src/ --format stylish' (for linting, cross-platform). "
+            "- script='git init && git add . && git commit -m \"Initial commit\"' (for git operations, cross-platform)."
         ),
         "inputSchema": {
             "type": "object",
@@ -119,11 +122,7 @@ def execute_shell_script_tool() -> Dict[str, Any]:
 
 def is_command_available(command: str) -> bool:
     """Check if a command is available in the system."""
-    try:
-        subprocess.run(["which", command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
-        return True
-    except subprocess.CalledProcessError:
-        return False
+    return shutil.which(command) is not None
 
 
 def prepare_code(code: str, language: str) -> str:
@@ -231,6 +230,50 @@ async def handle_execute_code(arguments: dict) -> List[types.TextContent]:
         return [types.TextContent(type="text", text=f"Error executing code:\n{str(e)}")]
 
 
+async def execute_shell_script_in_temp_file_windows(script: str, timeout: int) -> tuple[str, str, int]:
+    """Execute a shell script in a temporary file on Windows and return stdout, stderr, and return code."""
+    
+    # Check if PowerShell is available
+    use_powershell = is_command_available("powershell")
+    
+    if use_powershell:
+        temp_file = "temp_script.ps1"
+        shell_command = ["powershell", "-ExecutionPolicy", "Bypass", "-File", temp_file]
+        header = "# PowerShell script\n"
+    else:
+        temp_file = "temp_script.bat"
+        shell_command = ["cmd.exe", "/c", temp_file]
+        header = "@echo off\n"
+    
+    try:
+        # Change to allowed directory first
+        os.chdir(state.allowed_directory)
+        
+        # Write script to temp file
+        with open(temp_file, 'w') as f:
+            f.write(header)
+            f.write(script)
+            f.flush()
+        
+        # Execute script
+        try:
+            result = subprocess.run(
+                shell_command,
+                capture_output=True,
+                timeout=timeout,
+                text=True,
+            )
+            return result.stdout, result.stderr, result.returncode
+        except subprocess.TimeoutExpired:
+            return '', f'Execution timed out after {timeout} seconds', 124
+    
+    finally:
+        # Cleanup
+        try:
+            os.unlink(temp_file)
+        except Exception:
+            pass
+
 async def execute_shell_script_in_temp_file(script: str, timeout: int) -> tuple[str, str, int]:
     """Execute a shell script in a temporary file and return stdout, stderr, and return code."""
     temp_file = "temp_script.sh"
@@ -278,7 +321,11 @@ async def handle_execute_shell_script(arguments: dict) -> List[types.TextContent
     timeout = min(arguments.get("timeout", 300), 600)  # Default 5 minutes, cap at 10 minutes
 
     try:
-        stdout, stderr, returncode = await execute_shell_script_in_temp_file(script, timeout)
+        # Use Windows-compatible function on Windows, Unix function otherwise
+        if platform.system() == "Windows":
+            stdout, stderr, returncode = await execute_shell_script_in_temp_file_windows(script, timeout)
+        else:
+            stdout, stderr, returncode = await execute_shell_script_in_temp_file(script, timeout)
         result = []
         if stdout:
             result.append(f"=== stdout ===\n{stdout.rstrip()}")
