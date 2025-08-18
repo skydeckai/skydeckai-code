@@ -80,7 +80,8 @@ def execute_shell_script_tool() -> Dict[str, Any]:
     return {
         "name": "execute_shell_script",
         "description": (
-            "Execute a shell script (bash/sh) on the user's local machine within the current working directory. "
+            "Execute a shell script on the user's local machine within the current working directory. "
+            "Cross-platform support: automatically uses bash/sh on Unix-like systems (Linux/macOS) and PowerShell/cmd on Windows. "
             "WHEN TO USE: When you need to automate system tasks, run shell commands, interact with the operating system, or perform operations "
             "that are best expressed as shell commands. Useful for file system operations, system configuration, or running system utilities. "
             "Also ideal when you need to run code linters to check for style issues or potential bugs in the codebase, "
@@ -94,10 +95,10 @@ def execute_shell_script_tool() -> Dict[str, Any]:
             "It is designed to perform tasks on the user's local environment, such as opening applications, installing packages and more. "
             "Always review the script carefully before execution to prevent unintended consequences. "
             "Examples: "
-            "- script='echo \"Current directory:\" && pwd'. "
-            "- script='for i in {1..5}; do echo $i; done'. "
-            "- script='eslint src/ --format stylish' (for linting). "
-            "- script='git init && git add . && git commit -m \"Initial commit\"' (for git operations)."
+            "- script='echo \"Current directory:\" && pwd' (Unix) or 'echo \"Current directory:\" && pwd' (Windows PowerShell). "
+            "- script='for i in {1..5}; do echo $i; done' (Unix) or 'for ($i=1; $i -le 5; $i++) { Write-Host $i }' (Windows PowerShell). "
+            "- script='eslint src/ --format stylish' (for linting, cross-platform). "
+            "- script='git init && git add . && git commit -m \"Initial commit\"' (for git operations, cross-platform)."
         ),
         "inputSchema": {
             "type": "object",
